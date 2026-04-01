@@ -5,8 +5,8 @@
         "titulo": "Random Access Memories",
         "artista": "Daft Punk",
         "genero": "Electronic",
-        "imagen": "https://upload.wikimedia.org/wikipedia/en/a/a7/Random_Access_Memories.jpg",
-        "audioPreview": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+        "imagen": "/assets/img/random_access.jpeg",
+        "audioPreview": "/assets/audio/daft_punk.mp3"
     },
     {
         "id": 2,
@@ -14,24 +14,79 @@
         "titulo": "After Hours",
         "artista": "The Weeknd",
         "genero": "R&B/Synth-pop",
-        "imagen": "https://upload.wikimedia.org/wikipedia/en/c/c1/The_Weeknd_-_After_Hours.png",
-        "audioPreview": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+        "imagen": "/assets/img/after_hours.jpeg",
+        "audioPreview": "/assets/audio/weeknd.mp3"
     },
     {
         "id": 3,
-        "tipo": "artista",
-        "nombre": "Tame Impala",
-        "genero": "Psychedelic Rock",
-        "imagen": "https://upload.wikimedia.org/wikipedia/commons/a/a2/Tame_Impala_at_Zitadelle_Spandau_in_Berlin_on_14_June_2016.jpg",
-        "isFeatured": true
+        "tipo": "album",
+        "titulo": "The Slow Rush",
+        "artista": "Tame Impala",
+        "genero": "Psychedelic Pop",
+        "imagen": "/assets/img/slow_rush.jpeg",
+        "audioPreview": "/assets/audio/tame_impala.mp3"
     },
     {
         "id": 4,
-        "tipo": "album",
-        "titulo": "Future Nostalgia",
-        "artista": "Dua Lipa",
+        "tipo": "artista",
+        "nombre": "Dua Lipa",
         "genero": "Disco-pop",
-        "imagen": "https://upload.wikimedia.org/wikipedia/en/f/f5/Dua_Lipa_-_Future_Nostalgia_%28Official_Album_Cover%29.png",
-        "audioPreview": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+        "imagen": "/assets/img/dua_lipa.jpeg",
+        "bio": "Referente actual del pop con influencias de la música disco de los 80s y 90s.",
+        "isFeatured": true
+    },
+    {
+        "id": 5,
+        "tipo": "album",
+        "titulo": "Demon Days",
+        "artista": "Gorillaz",
+        "genero": "Alternative Rock / Electronic",
+        "imagen": "/assets/img/demon_days.jpeg",
+        "audioPreview": "/assets/audio/gorillaz.mp3"
+    },
+    {
+        "id": 6,
+        "tipo": "album",
+        "titulo": "AM",
+        "artista": "Arctic Monkeys",
+        "genero": "Indie Rock",
+        "imagen": "/assets/img/am.jpeg",
+        "audioPreview": "/assets/audio/arctic.mp3"
+    },
+    {
+        "id": 7,
+        "tipo": "album",
+        "titulo": "Motomami",
+        "artista": "Rosalía",
+        "genero": "Experimental Pop / Flamenco",
+        "imagen": "/assets/img/motomami.jpeg",
+        "audioPreview": "/assets/audio/rosalia.mp3"
+    },
+    {
+        "id": 8,
+        "tipo": "artista",
+        "nombre": "Kendrick Lamar",
+        "genero": "Hip Hop",
+        "imagen": "/assets/img/kendrick.jpeg",
+        "bio": "Uno de los artistas más influyentes del hip hop contemporáneo, ganador del premio Pulitzer.",
+        "isFeatured": true
+    },
+    {
+        "id": 9,
+        "tipo": "album",
+        "titulo": "Currents",
+        "artista": "Tame Impala",
+        "genero": "Synth-pop / Psychedelic",
+        "imagen": "/assets/img/currents.jpeg",
+        "audioPreview": "/assets/audio/tame_impala_2.mp3"
+    },
+    {
+        "id": 10,
+        "tipo": "artista",
+        "nombre": "Florence + The Machine",
+        "genero": "Indie Pop",
+        "imagen": "/assets/img/florence.jpeg",
+        "bio": "Banda británica conocida por su sonido dramático y la poderosa voz de Florence Welch.",
+        "isFeatured": false
     }
 ]
