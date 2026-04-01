@@ -1,0 +1,92 @@
+[
+    {
+        "id": 1,
+        "type": "album",
+        "title": "Random Access Memories",
+        "artist": "Daft Punk",
+        "gender": "Electronic",
+        "image": "/assets/img/random_access.jpeg",
+        "audioPreview": "/assets/audio/daft_punk.mp3"
+    },
+    {
+        "id": 2,
+        "type": "album",
+        "title": "After Hours",
+        "artist": "The Weeknd",
+        "gender": "R&B/Synth-pop",
+        "image": "/assets/img/after_hours.jpeg",
+        "audioPreview": "/assets/audio/weeknd.mp3"
+    },
+    {
+        "id": 3,
+        "type": "album",
+        "title": "The Slow Rush",
+        "artist": "Tame Impala",
+        "gender": "Psychedelic Pop",
+        "image": "/assets/img/slow_rush.jpeg",
+        "audioPreview": "/assets/audio/tame_impala.mp3"
+    },
+    {
+        "id": 4,
+        "type": "artista",
+        "name": "Dua Lipa",
+        "gender": "Disco-pop",
+        "image": "/assets/img/dua_lipa.jpeg",
+        "bio": "Referente actual del pop con influencias de la música disco de los 80s y 90s.",
+        "isFeatured": true
+    },
+    {
+        "id": 5,
+        "type": "album",
+        "title": "Demon Days",
+        "artist": "Gorillaz",
+        "gender": "Alternative Rock / Electronic",
+        "image": "/assets/img/demon_days.jpeg",
+        "audioPreview": "/assets/audio/gorillaz.mp3"
+    },
+    {
+        "id": 6,
+        "type": "album",
+        "title": "AM",
+        "artist": "Arctic Monkeys",
+        "gender": "Indie Rock",
+        "image": "/assets/img/am.jpeg",
+        "audioPreview": "/assets/audio/arctic.mp3"
+    },
+    {
+        "id": 7,
+        "type": "album",
+        "title": "Motomami",
+        "artist": "Rosalía",
+        "gender": "Experimental Pop / Flamenco",
+        "image": "/assets/img/motomami.jpeg",
+        "audioPreview": "/assets/audio/rosalia.mp3"
+    },
+    {
+        "id": 8,
+        "type": "artista",
+        "name": "Kendrick Lamar",
+        "gender": "Hip Hop",
+        "image": "/assets/img/kendrick.jpeg",
+        "bio": "Uno de los artistas más influyentes del hip hop contemporáneo, ganador del premio Pulitzer.",
+        "isFeatured": true
+    },
+    {
+        "id": 9,
+        "type": "album",
+        "title": "Currents",
+        "artist": "Tame Impala",
+        "gender": "Synth-pop / Psychedelic",
+        "image": "/assets/img/currents.jpeg",
+        "audioPreview": "/assets/audio/tame_impala_2.mp3"
+    },
+    {
+        "id": 10,
+        "type": "artista",
+        "name": "Florence + The Machine",
+        "gender": "Indie Pop",
+        "image": "/assets/img/florence.jpeg",
+        "bio": "Banda británica conocida por su sonido dramático y la poderosa voz de Florence Welch.",
+        "isFeatured": false
+    }
+]

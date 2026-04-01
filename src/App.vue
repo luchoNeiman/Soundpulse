@@ -20,7 +20,7 @@ const reproducirMusica = () => {
     <nav class="navegacion-principal">
       <RouterLink to="/">Discovery</RouterLink>
       <RouterLink to="/admin">Backstage</RouterLink>
-      <RouterLink to="/investigacion">Vue.js Lab</RouterLink>
+      <RouterLink to="/research">Vue.js Lab</RouterLink>
     </nav>
   </header>
 

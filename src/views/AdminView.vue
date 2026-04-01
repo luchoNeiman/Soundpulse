@@ -2,63 +2,65 @@
 import { ref } from 'vue';
 
 // Variables reactivas para el formulario y el estado de la vista
-const emailIngresado = ref('');
-const passwordIngresado = ref('');
-const errorMensaje = ref('');
-const accesoConcedido = ref(false);
+const enteredEmail = ref('');
+const enteredPassword = ref('');
+const errorMessage = ref('');
+const accessGranted = ref(false);
 
-// Función asincrónica para validar el login
-const intentarLogin = async () => {
-    // Limpio mensajes de error previos
-    errorMensaje.value = '';
+
+
+//Función asíncrona para validar el login
+const tryLogin = async () => {
+    // Limpio los mensajes de error anteriores
+    errorMessage.value = '';
 
     try {
-        // Consumo el JSON simulando una petición a un servidor
-        const respuesta = await fetch('/data/usuarios.json');
-        const usuarios = await respuesta.json();
+        // Consumo el JSON simulando una consulta al servidor
+        const response = await fetch('/data/users.json');
+        const users = await response.json();
 
-        // Busco si existe un usuario con esas credenciales exactas
-        const usuarioEncontrado = usuarios.find(
-            (user: any) => user.email === emailIngresado.value && user.password === passwordIngresado.value
+        // Busco un usuario que coincida exactamente con el email y la contraseña ingresados
+        const foundUser = users.find(
+            (user: any) => user.email === enteredEmail.value && user.password === enteredPassword.value
         );
 
-        if (usuarioEncontrado) {
-            // Verifico si tiene los permisos necesarios
-            if (usuarioEncontrado.isAdmin) {
-                accesoConcedido.value = true;
+        if (foundUser) {
+            // Verifico si el usuario encontrado tiene el rol de administrador
+            if (foundUser.isAdmin) {
+                accessGranted.value = true;
             } else {
-                errorMensaje.value = 'Acceso denegado: Esta pantalla es de acceso restringido a administradores.';
+                errorMessage.value = 'Acceso denegado. No tienes permisos de administrador.';
             }
         } else {
-            errorMensaje.value = 'Credenciales incorrectas. Por favor, intente nuevamente.';
+            errorMessage.value = 'Credenciales incorrectas. Por favor, inténtalo de nuevo.';
         }
     } catch (error) {
         console.error("Error al consultar la base de usuarios:", error);
-        errorMensaje.value = 'Ocurrió un error en el sistema. Intente más tarde.';
+        errorMessage.value = 'Ocurrió un error en el sistema. Por favor, inténtalo de nuevo más tarde.';
     }
 };
 </script>
 
 <template>
     <main class="admin-container">
-        <section v-if="!accesoConcedido" class="login-box">
+        <section v-if="!accessGranted" class="login-box">
             <h2>Acceso Restringido</h2>
             <p>Ingrese sus credenciales de administrador para continuar.</p>
 
-            <form @submit.prevent="intentarLogin" class="formulario">
+            <form @submit.prevent="tryLogin" class="form">
                 <div class="input-group">
                     <label for="email">Correo Electrónico</label>
-                    <input type="email" id="email" v-model="emailIngresado" required>
+                    <input type="email" id="email" v-model="enteredEmail" required>
                 </div>
 
                 <div class="input-group">
                     <label for="password">Contraseña</label>
-                    <input type="password" id="password" v-model="passwordIngresado" required>
+                    <input type="password" id="password" v-model="enteredPassword" required>
                 </div>
 
                 <button type="submit" class="btn-login">Ingresar al Backstage</button>
 
-                <p v-if="errorMensaje" class="error-text">{{ errorMensaje }}</p>
+                <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
             </form>
         </section>
 
@@ -88,7 +90,7 @@ const intentarLogin = async () => {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
 
-.formulario {
+.form {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
