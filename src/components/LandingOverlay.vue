@@ -32,7 +32,10 @@ const manejarInicio = () => {
     left: 0;
     width: 100%;
     height: 100%;
-    background: #000;
+    background:
+        radial-gradient(circle at 25% 15%, rgba(0, 255, 136, 0.2), transparent 34%),
+        radial-gradient(circle at 80% 10%, rgba(0, 255, 136, 0.15), transparent 26%),
+        #000;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -40,12 +43,30 @@ const manejarInicio = () => {
     color: white;
 }
 
+.content {
+    text-align: center;
+    padding: 2rem;
+}
+
+.logo-text {
+    margin: 0;
+    font-size: clamp(2.2rem, 6vw, 4.1rem);
+    letter-spacing: 0.04em;
+    color: #00ff88;
+}
+
+.content p {
+    margin: 0.6rem 0 2rem;
+    color: #cacaca;
+}
+
 .btn-start {
     padding: 1rem 2rem;
-    background: transparent;
+    background: rgba(0, 255, 136, 0.06);
     border: 2px solid #00ff88;
     color: #00ff88;
     font-weight: bold;
+    border-radius: 999px;
     cursor: pointer;
     transition: all 0.3s ease;
 }

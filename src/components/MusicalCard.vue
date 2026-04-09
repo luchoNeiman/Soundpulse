@@ -53,8 +53,13 @@ const requestPlay = () => {
                 <p>{{ music.summaryInfo }}</p>
             </div>
 
-            <button @click="alternarMeGusta" class="btn-like" :class="{ activo: meGusta }">
-                {{ meGusta ? '♥' : '♡' }}
+            <button
+                @click="alternarMeGusta"
+                class="btn-like"
+                :class="{ activo: meGusta }"
+                :aria-label="meGusta ? 'Remove from favorites' : 'Add to favorites'"
+            >
+                <i :class="meGusta ? 'bi-heart-fill' : 'bi-heart'"></i>
             </button>
         </div>
     </article>
@@ -62,17 +67,19 @@ const requestPlay = () => {
 
 <style scoped>
 .music-card {
-    background: #1e1e1e;
+    background: linear-gradient(180deg, rgba(39, 39, 39, 0.95) 0%, rgba(28, 28, 28, 0.95) 100%);
     border-radius: 12px;
     overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
     display: flex;
     flex-direction: column;
 }
 
 .music-card:hover {
     transform: translateY(-8px);
-    box-shadow: 0 10px 20px rgba(0, 255, 136, 0.2);
+    border-color: rgba(0, 255, 136, 0.4);
+    box-shadow: 0 18px 28px rgba(0, 0, 0, 0.32);
 }
 
 .image-container {
@@ -93,7 +100,7 @@ const requestPlay = () => {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.2) 15%, rgba(0, 0, 0, 0.8) 100%);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -114,11 +121,12 @@ const requestPlay = () => {
     font-weight: bold;
     cursor: pointer;
     transform: scale(0.9);
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .btn-play:hover {
     transform: scale(1.1);
+    box-shadow: 0 10px 24px rgba(0, 255, 136, 0.35);
 }
 
 .info {
@@ -141,20 +149,37 @@ const requestPlay = () => {
 }
 
 .btn-like {
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 1.8rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
     cursor: pointer;
-    transition: color 0.3s ease, transform 0.2s ease;
+    transition: transform 0.2s ease, border-color 0.25s ease, background 0.25s ease;
+}
+
+.btn-like i {
+    font-size: 1.25rem;
+    color: #f0f0f0;
+    transition: color 0.2s ease;
 }
 
 .btn-like:hover {
-    transform: scale(1.2);
+    transform: scale(1.12);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 .btn-like.activo {
-    color: #ff0055;
-    /* Color rojo/fucsia cuando está likeado */
+    border-color: rgba(255, 68, 68, 0.45);
+    background: rgba(255, 68, 68, 0.08);
+}
+
+.btn-like.activo i {
+    color: #ff4444;
 }
 </style>

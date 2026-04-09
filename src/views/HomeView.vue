@@ -59,21 +59,49 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.container {
+    width: min(1200px, 100%);
+    margin: 0 auto;
+    padding: 1.4rem 1rem 3rem;
+}
+
 .hero {
     text-align: center;
-    padding: 3rem 1rem;
+    padding: 2.5rem 1rem 2rem;
     color: white;
 }
 
 .hero h1 {
-    font-size: 2.5rem;
+    margin: 0;
+    font-size: clamp(2rem, 3.6vw, 3rem);
     color: #00ff88;
+    text-shadow: 0 0 18px rgba(0, 255, 136, 0.22);
+}
+
+.hero p {
+    margin: 0.8rem 0 0;
+    color: #b0b5bb;
+    font-size: 1.05rem;
 }
 
 .gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 2.5rem;
-    padding: 2rem 4rem;
+    gap: 1.4rem;
+    padding: 0.8rem 0.2rem 1rem;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding-top: 0.7rem;
+    }
+
+    .hero {
+        padding-top: 1.8rem;
+    }
+
+    .gallery {
+        gap: 1rem;
+    }
 }
 </style>
