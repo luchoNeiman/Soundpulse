@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useUserStore } from '../stores/userStore';
 
 // Variables reactivas para el formulario y el estado de la vista
 const enteredEmail = ref('');
@@ -7,7 +8,7 @@ const enteredPassword = ref('');
 const errorMessage = ref('');
 const accessGranted = ref(false);
 
-
+const userStore = useUserStore();
 
 //Función asíncrona para validar el login
 const tryLogin = async () => {
@@ -28,6 +29,7 @@ const tryLogin = async () => {
             // Verifico si el usuario encontrado tiene el rol de administrador
             if (foundUser.isAdmin) {
                 accessGranted.value = true;
+                userStore.login(foundUser); // Guardo la sesión globalmente
             } else {
                 errorMessage.value = 'Acceso denegado. No tienes permisos de administrador.';
             }

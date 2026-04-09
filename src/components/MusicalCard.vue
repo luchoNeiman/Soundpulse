@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { computed } from 'vue';
 import type { MusicalItem } from '../models/MusicalItem';
+import { useUserStore } from '../stores/userStore';
 
 // Recibo el objeto musical como propiedad desde la vista padre
 const props = defineProps<{
@@ -10,18 +12,20 @@ const props = defineProps<{
 // Defino el evento que voy a emitir cuando el usuario le dé play
 const emit = defineEmits(['play']);
 
-// Estado reactivo para la interacción del usuario
-const meGusta = ref(false);
+// Instancio el store global
+const userStore = useUserStore();
+
+// Computed property: reacciona automáticamente si el ID está en el array del usuario
+const meGusta = computed(() => userStore.isLiked(props.music.id));
 
 const alternarMeGusta = () => {
-    meGusta.value = !meGusta.value;
-
-    // Dejo preparado el log para cuando lo conecte con el usuario activo
-    if (meGusta.value) {
-        console.log(`Guardando el ID ${props.music.id} en los likedPostIDs del usuario...`);
-    } else {
-        console.log(`Eliminando el ID ${props.music.id} de favoritos.`);
+    // Si no hay usuario logueado, le muestro una alerta al visitante
+    if (!userStore.currentUser) {
+        alert("Por favor, inicia sesión en el panel Admin para guardar tus favoritos.");
+        return;
     }
+    // Ejecuto la acción en el store
+    userStore.toggleLike(props.music.id);
 };
 
 const requestPlay = () => {
@@ -45,7 +49,7 @@ const requestPlay = () => {
 
         <div class="info">
             <div class="text">
-                <h3>{{ music.title || music.name }}</h3>
+                <h3>{{ music.title }}</h3>
                 <p>{{ music.summaryInfo }}</p>
             </div>
 
