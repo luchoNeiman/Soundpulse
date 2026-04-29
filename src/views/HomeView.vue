@@ -1,46 +1,46 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { MusicalItem } from '../models/MusicalItem';
+import { useMusicStore } from '../stores/musicStores';
 import MusicalCard from '../components/MusicalCard.vue';
 
-// Variable reactiva para almacenar los álbumes
-const musicList = ref<MusicalItem[]>([]);
+const musicStore = useMusicStore(); // Accedo al store de música
+const previewPlayer = ref<HTMLAudioElement | null>(null); // Referencia al elemento de audio para reproducir previews
+const activePreviewPath = ref('');
+const isPreviewPlaying = ref(false);
 
-// Referencia al reproductor de audio para las previews
-const previewPlayer = ref<HTMLAudioElement | null>(null);
+const emit = defineEmits<{
+    previewPlaybackChange: [isPlaying: boolean]
+}>();
 
-// Función asíncrona para cargar datos desde el JSON
-const loadData = async () => {
-    try {
-        const response = await fetch('/data/content.json');
-        const data = await response.json();
-
-        // Transformo el JSON en instancias de la clase MusicalItem
-        musicList.value = data.map((item: any) =>
-            new MusicalItem(item)
-        );
-    } catch (error) {
-        console.error("Error cargando el archivo JSON:", error);
-    }
-};
-
-// Esta función se ejecuta cuando una tarjeta emite el evento 'play'
-const playPreview = (audioPath: string) => {
+const handlePreviewToggle = (audioPath: string) => {
     if (previewPlayer.value) {
-        // Pauso cualquier audio que estuviera sonando antes de cargar el nuevo
-        previewPlayer.value.pause();
+        const isSameTrack = activePreviewPath.value === audioPath;
 
-        // Asigno la nueva ruta local y reproduzco
-        previewPlayer.value.src = audioPath;
+        if (isSameTrack && isPreviewPlaying.value) {
+            // Si es la misma pista y ya está sonando, pauso.
+            previewPlayer.value.pause();
+            isPreviewPlaying.value = false;
+            emit('previewPlaybackChange', false);
+            return;
+        }
+
+        // Si cambia la pista o estaba pausada, preparo y reproduzco.
+        if (!isSameTrack) {
+            previewPlayer.value.src = audioPath;
+            activePreviewPath.value = audioPath;
+        }
         previewPlayer.value.play();
+        isPreviewPlaying.value = true;
+        emit('previewPlaybackChange', true);
 
-        console.log(`Reproduciendo vista previa desde: ${audioPath}`);
+        console.log(`Preview activo: ${audioPath}`);
     }
 };
 
 onMounted(() => {
-    loadData();
+    musicStore.fetchMusicFromAPI(); // Al montar el componente, llamo a la función del store para cargar la música desde la API
 });
+
 </script>
 
 <template>
@@ -50,11 +50,17 @@ onMounted(() => {
             <p>Explorá la biblioteca sonora y marcá tus favoritos.</p>
         </header>
 
-        <section class="gallery">
-            <MusicalCard v-for="music in musicList" :key="music.id" :music="music" @play="playPreview" />
+        <div v-if="musicStore.isLoading" class="loading-state">
+            <p>Cargando biblioteca musical...</p>
+        </div>
+
+        <section v-else class="gallery">
+            <MusicalCard v-for="music in musicStore.musicList" :key="music.id" :music="music"
+                :is-active-preview="activePreviewPath === music.audioPreview" :is-preview-playing="isPreviewPlaying"
+                @play="handlePreviewToggle" />
         </section>
 
-        <audio ref="previewPlayer"></audio>
+        <audio ref="previewPlayer" @ended="isPreviewPlaying = false; emit('previewPlaybackChange', false)"></audio>
     </main>
 </template>
 
@@ -84,11 +90,33 @@ onMounted(() => {
     font-size: 1.05rem;
 }
 
+.loading-state {
+    text-align: center;
+    padding: 3rem;
+    color: #aaa;
+    font-size: 1.2rem;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.6;
+    }
+}
+
 .gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.4rem;
-    padding: 0.8rem 0.2rem 1rem;
+    gap: 2.5rem;
+    padding: 2rem 4rem;
 }
 
 @media (max-width: 768px) {

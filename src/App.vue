@@ -4,11 +4,30 @@ import { RouterView } from 'vue-router';
 import LandingOverlay from './components/LandingOverlay.vue';
 
 const audioPlayer = ref<HTMLAudioElement | null>(null);
+const wasBackgroundPlayingBeforePreview = ref(false);
 
 const reproducirMusica = () => {
   if (audioPlayer.value) {
     audioPlayer.value.volume = 0.2;
     audioPlayer.value.play();
+  }
+};
+
+const handlePreviewPlaybackChange = (isPreviewPlaying: boolean) => {
+  if (!audioPlayer.value) return;
+
+  if (isPreviewPlaying) {
+    // Guardo si la musica de fondo estaba sonando para reanudarla al finalizar el preview.
+    wasBackgroundPlayingBeforePreview.value = !audioPlayer.value.paused;
+    if (wasBackgroundPlayingBeforePreview.value) {
+      audioPlayer.value.pause();
+    }
+    return;
+  }
+
+  if (wasBackgroundPlayingBeforePreview.value) {
+    audioPlayer.value.play();
+    wasBackgroundPlayingBeforePreview.value = false;
   }
 };
 </script>
@@ -24,7 +43,9 @@ const reproducirMusica = () => {
     </nav>
   </header>
 
-  <RouterView class="view-shell" />
+  <RouterView v-slot="{ Component }">
+    <component :is="Component" class="view-shell" @preview-playback-change="handlePreviewPlaybackChange" />
+  </RouterView>
 
   <audio ref="audioPlayer" loop>
     <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" type="audio/mpeg">

@@ -7,6 +7,8 @@ import { useUserStore } from '../stores/userStore';
 // Recibo el objeto musical como propiedad desde la vista padre
 const props = defineProps<{
     music: MusicalItem
+    isPreviewPlaying: boolean
+    isActivePreview: boolean
 }>();
 
 // Defino el evento que voy a emitir cuando el usuario le dé play
@@ -33,6 +35,17 @@ const requestPlay = () => {
         emit('play', props.music.audioPreview);
     }
 };
+
+const previewIconClass = computed(() => {
+    // Uso iconos de Bootstrap para reflejar el estado real del preview.
+    if (props.isActivePreview && props.isPreviewPlaying) return 'bi bi-pause-fill';
+    return 'bi bi-play-fill';
+});
+
+const previewButtonText = computed(() => {
+    if (props.isActivePreview && props.isPreviewPlaying) return 'Pause';
+    return 'Play';
+});
 </script>
 
 <template>
@@ -42,7 +55,8 @@ const requestPlay = () => {
 
             <div class="interactive-overlay">
                 <button v-if="music.audioPreview" @click="requestPlay" class="btn-play">
-                    ▶ Play
+                    <i :class="previewIconClass"></i>
+                    <span>{{ previewButtonText }}</span>
                 </button>
             </div>
         </div>
@@ -53,12 +67,8 @@ const requestPlay = () => {
                 <p>{{ music.summaryInfo }}</p>
             </div>
 
-            <button
-                @click="alternarMeGusta"
-                class="btn-like"
-                :class="{ activo: meGusta }"
-                :aria-label="meGusta ? 'Remove from favorites' : 'Add to favorites'"
-            >
+            <button @click="alternarMeGusta" class="btn-like" :class="{ activo: meGusta }"
+                :aria-label="meGusta ? 'Remove from favorites' : 'Add to favorites'">
                 <i :class="meGusta ? 'bi-heart-fill' : 'bi-heart'"></i>
             </button>
         </div>
@@ -120,8 +130,15 @@ const requestPlay = () => {
     border-radius: 25px;
     font-weight: bold;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
     transform: scale(0.9);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-play i {
+    font-size: 1rem;
 }
 
 .btn-play:hover {
@@ -133,19 +150,27 @@ const requestPlay = () => {
     padding: 1rem;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
+    gap: 0.8rem;
     color: white;
+}
+
+.text {
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .text h3 {
     margin: 0 0 0.3rem 0;
     font-size: 1.1rem;
+    overflow-wrap: anywhere;
 }
 
 .text p {
     margin: 0;
     font-size: 0.85rem;
     color: #aaa;
+    overflow-wrap: anywhere;
 }
 
 .btn-like {
@@ -157,6 +182,7 @@ const requestPlay = () => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
     padding: 0;
     cursor: pointer;
     transition: transform 0.2s ease, border-color 0.25s ease, background 0.25s ease;
