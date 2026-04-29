@@ -5,15 +5,19 @@ import { MusicalItem } from '../models/MusicalItem';
 export const useMusicStore = defineStore('music', () => {
     const musicList = ref<MusicalItem[]>([]);
     const isLoading = ref(false);
+    const activeSearchTerm = ref('');
 
-    const fetchMusicFromAPI = async () => {
-        // Si ya tengo datos cargados, no vuelvo a llamar a la API
-        if (musicList.value.length > 0) return;
+    const fetchMusicFromAPI = async (searchTerm = 'pop') => {
+        const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+
+        // Evito llamados redundantes si ya tengo cargado ese mismo genero.
+        if (musicList.value.length > 0 && activeSearchTerm.value === normalizedSearchTerm) return;
 
         isLoading.value = true;
         try {
-            // Busco un término general ("pop") y pido canciones
-            const response = await fetch('https://itunes.apple.com/search?term=pop&entity=song&limit=20');
+            const response = await fetch(
+                `https://itunes.apple.com/search?term=${encodeURIComponent(normalizedSearchTerm)}&entity=song&limit=30`
+            );
             const data = await response.json();
 
             // Mapeo la respuesta de iTunes a nuestra clase
@@ -29,7 +33,8 @@ export const useMusicStore = defineStore('music', () => {
                     audioPreview: apiItem.previewUrl
                 });
             });
-            console.log("Datos cargados desde iTunes API:", musicList.value);
+            activeSearchTerm.value = normalizedSearchTerm;
+            console.log(`Datos cargados desde iTunes API (${normalizedSearchTerm}):`, musicList.value);
         } catch (error) {
             console.error("Error al conectar con la API musical:", error);
         } finally {
@@ -47,5 +52,5 @@ export const useMusicStore = defineStore('music', () => {
         musicList.value = musicList.value.filter(item => item.id !== id);
     };
 
-    return { musicList, isLoading, fetchMusicFromAPI, updateItem, deleteItem };
+    return { musicList, isLoading, activeSearchTerm, fetchMusicFromAPI, updateItem, deleteItem };
 });
