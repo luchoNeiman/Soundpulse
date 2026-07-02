@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useUserStore } from '../stores/userStore';
 import { useMusicStore } from '../stores/musicStores';
 import { MusicalItem } from '../models/MusicalItem';
@@ -12,6 +12,10 @@ const accessGranted = ref(false);
 
 const showModal = ref(false);
 const modalMode = ref<'create' | 'edit'>('create');
+const selectedGenre = ref('all');
+const selectedArtist = ref('all');
+const albumQuery = ref('');
+const apiGenreOptions = ref<string[]>([]);
 
 // Este objeto reactivo permite demostrar el two-way data binding del formulario.
 const formData = reactive({
@@ -31,6 +35,51 @@ const isSessionActive = computed(() => !!userStore.currentUser);
 const modalTitle = computed(() =>
     modalMode.value === 'create' ? 'Agregar Contenido' : 'Editar Contenido'
 );
+
+const artistOptions = computed(() => {
+    const allArtists = musicStore.musicList
+        .map(item => item.artist)
+        .filter((artist, index, arr) => !!artist && arr.indexOf(artist) === index)
+        .sort((a, b) => a.localeCompare(b));
+
+    return ['all', ...allArtists];
+});
+
+const filteredMusicList = computed(() => {
+    const normalizedAlbumQuery = albumQuery.value.trim().toLowerCase();
+
+    return musicStore.musicList.filter((item) => {
+        const genreMatch = selectedGenre.value === 'all' || item.genre === selectedGenre.value;
+        const artistMatch = selectedArtist.value === 'all' || item.artist === selectedArtist.value;
+        const albumMatch = !normalizedAlbumQuery
+            || item.title.toLowerCase().includes(normalizedAlbumQuery);
+
+        return genreMatch && artistMatch && albumMatch;
+    });
+});
+
+const loadGenreOptionsFromAPI = async () => {
+    try {
+        const response = await fetch('https://itunes.apple.com/search?term=music&entity=song&limit=200');
+        const data = await response.json();
+
+        const uniqueGenres = data.results
+            .map((apiItem: any) => apiItem.primaryGenreName)
+            .filter((genre: string, index: number, arr: string[]) => !!genre && arr.indexOf(genre) === index)
+            .sort((a: string, b: string) => a.localeCompare(b));
+
+        apiGenreOptions.value = uniqueGenres;
+    } catch (error) {
+        console.error('Error cargando listado de generos desde API:', error);
+        apiGenreOptions.value = [];
+    }
+};
+
+const clearFilters = () => {
+    selectedGenre.value = 'all';
+    selectedArtist.value = 'all';
+    albumQuery.value = '';
+};
 
 const tryLogin = async () => {
     errorMessage.value = '';
@@ -55,7 +104,8 @@ const tryLogin = async () => {
         if (foundUser.isAdmin) {
             accessGranted.value = true;
             infoMessage.value = 'Sesion iniciada como administrador.';
-            await musicStore.fetchMusicFromAPI();
+            clearFilters();
+            await musicStore.fetchMusicFromAPI('music');
             return;
         }
 
@@ -72,6 +122,7 @@ const logoutSession = () => {
     showModal.value = false;
     infoMessage.value = '';
     errorMessage.value = '';
+    clearFilters();
 };
 
 const simulateRequest = (method: 'POST' | 'PUT' | 'DELETE', payload: unknown) => {
@@ -145,6 +196,19 @@ const deleteContent = (id: number) => {
     simulateRequest('DELETE', { id });
     musicStore.deleteItem(id);
 };
+
+onMounted(() => {
+    loadGenreOptionsFromAPI();
+});
+
+watch(selectedGenre, async (newGenre) => {
+    if (!accessGranted.value) return;
+
+    const searchTerm = newGenre === 'all' ? 'music' : newGenre;
+    await musicStore.fetchMusicFromAPI(searchTerm);
+    selectedArtist.value = 'all';
+    albumQuery.value = '';
+});
 </script>
 
 <template>
@@ -195,6 +259,42 @@ const deleteContent = (id: number) => {
                     <button @click="openCreateModal" class="btn-add">+ Agregar Contenido</button>
                 </div>
 
+                <section class="filters-panel">
+                    <div class="filters-grid">
+                        <label class="filter-field">
+                            <span>Genero</span>
+                            <select v-model="selectedGenre">
+                                <option value="all">Todos los generos</option>
+                                <option v-for="genreOption in apiGenreOptions" :key="genreOption" :value="genreOption">
+                                    {{ genreOption }}
+                                </option>
+                            </select>
+                        </label>
+
+                        <label class="filter-field">
+                            <span>Artista</span>
+                            <select v-model="selectedArtist">
+                                <option v-for="artist in artistOptions" :key="artist" :value="artist">
+                                    {{ artist === 'all' ? 'Todos los artistas' : artist }}
+                                </option>
+                            </select>
+                        </label>
+
+                        <label class="filter-field filter-search">
+                            <span>Album / Cancion</span>
+                            <input v-model="albumQuery" type="text" placeholder="Buscar por titulo...">
+                        </label>
+
+                        <button type="button" class="btn-reset" @click="clearFilters">
+                            Limpiar filtros
+                        </button>
+                    </div>
+
+                    <p class="results-caption">
+                        Mostrando {{ filteredMusicList.length }} de {{ musicStore.musicList.length }} resultados
+                    </p>
+                </section>
+
                 <div v-if="musicStore.isLoading" class="loading-state">
                     Cargando base de datos desde la API...
                 </div>
@@ -211,7 +311,7 @@ const deleteContent = (id: number) => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="item in musicStore.musicList" :key="item.id">
+                        <tr v-for="item in filteredMusicList" :key="item.id">
                             <td>{{ item.id }}</td>
                             <td><span class="badge">{{ item.type.toUpperCase() }}</span></td>
                             <td>{{ item.title }}</td>
@@ -222,7 +322,7 @@ const deleteContent = (id: number) => {
                                 <button @click="deleteContent(item.id)" class="btn-delete">Borrar</button>
                             </td>
                         </tr>
-                        <tr v-if="musicStore.musicList.length === 0">
+                        <tr v-if="filteredMusicList.length === 0">
                             <td colspan="6" class="text-center">No hay contenido en la biblioteca.</td>
                         </tr>
                     </tbody>
@@ -455,6 +555,69 @@ const deleteContent = (id: number) => {
     color: #ebeff2;
 }
 
+.filters-panel {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(10, 10, 10, 0.45);
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.8rem;
+    align-items: end;
+}
+
+.filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.36rem;
+}
+
+.filter-field span {
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9ba3ab;
+}
+
+.filter-field select,
+.filter-field input {
+    width: 100%;
+    min-height: 42px;
+    padding: 0.6rem 0.72rem;
+    border-radius: 9px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(0, 0, 0, 0.58);
+    color: #f3f6f9;
+}
+
+.filter-field select:focus,
+.filter-field input:focus {
+    outline: none;
+    border-color: rgba(0, 255, 136, 0.45);
+    box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.12);
+}
+
+.btn-reset {
+    min-height: 42px;
+    padding: 0.62rem 0.95rem;
+    border-radius: 9px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.02);
+    color: #e6ebef;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.results-caption {
+    margin: 0.8rem 0 0;
+    color: #9ba3ab;
+    font-size: 0.88rem;
+}
+
 .loading-state {
     margin: 0.7rem 0 1rem;
     padding: 0.8rem 1rem;
@@ -671,6 +834,10 @@ const deleteContent = (id: number) => {
         align-items: flex-start;
     }
 
+    .filters-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .admin-table {
         font-size: 0.92rem;
     }
@@ -683,6 +850,10 @@ const deleteContent = (id: number) => {
 @media (max-width: 640px) {
     .admin-container {
         padding: 1rem 0.75rem 2rem;
+    }
+
+    .filters-grid {
+        grid-template-columns: 1fr;
     }
 
     .modal-form {

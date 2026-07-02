@@ -15,9 +15,7 @@ export const useMusicStore = defineStore('music', () => {
 
         isLoading.value = true;
         try {
-            const response = await fetch(
-                `https://itunes.apple.com/search?term=${encodeURIComponent(normalizedSearchTerm)}&entity=song&limit=30`
-            );
+            const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(normalizedSearchTerm)}&entity=song&limit=30`);
             const data = await response.json();
 
             // Mapeo la respuesta de iTunes a nuestra clase
