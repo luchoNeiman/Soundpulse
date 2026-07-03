@@ -408,34 +408,36 @@ watch(activeTab, async (newTab) => {
                     Cargando base de datos desde la API...
                 </div>
 
-                <table v-else class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Tipo</th>
-                            <th>Título / Canción</th>
-                            <th>Artista</th>
-                            <th>Género</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="item in filteredMusicList" :key="item.id">
-                            <td>{{ item.id }}</td>
-                            <td><span class="badge">{{ item.type.toUpperCase() }}</span></td>
-                            <td>{{ item.title }}</td>
-                            <td>{{ item.artist }}</td>
-                            <td>{{ item.genre }}</td>
-                            <td class="acciones">
-                                <button class="btn-edit" @click="openEditMusicModal(item)">Editar</button>
-                                <button class="btn-delete" @click="deleteContent(item.id)">Borrar</button>
-                            </td>
-                        </tr>
-                        <tr v-if="filteredMusicList.length === 0">
-                            <td colspan="6" class="text-center">No hay contenido en la biblioteca.</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div v-else class="admin-table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tipo</th>
+                                <th>Título / Canción</th>
+                                <th>Artista</th>
+                                <th>Género</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in filteredMusicList" :key="item.id">
+                                <td>{{ item.id }}</td>
+                                <td><span class="badge">{{ item.type.toUpperCase() }}</span></td>
+                                <td>{{ item.title }}</td>
+                                <td>{{ item.artist }}</td>
+                                <td>{{ item.genre }}</td>
+                                <td class="acciones">
+                                    <button class="btn-edit" @click="openEditMusicModal(item)">Editar</button>
+                                    <button class="btn-delete" @click="deleteContent(item.id)">Borrar</button>
+                                </td>
+                            </tr>
+                            <tr v-if="filteredMusicList.length === 0">
+                                <td colspan="6" class="text-center">No hay contenido en la biblioteca.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </section>
 
             <section v-else class="admin-content">
@@ -448,39 +450,41 @@ watch(activeTab, async (newTab) => {
                     Cargando usuarios...
                 </div>
 
-                <table v-else class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="user in userStore.userList" :key="user.id">
-                            <td>{{ user.id }}</td>
-                            <td>{{ user.name }}</td>
-                            <td>{{ user.email }}</td>
-                            <td>
-                                <span class="badge" :class="user.isAdmin ? 'role-admin' : 'role-user'">
-                                    {{ user.isAdmin ? 'Admin' : 'User' }}
-                                </span>
-                            </td>
-                            <td class="acciones">
-                                <button class="btn-edit" @click="openEditUserModal(user)">Editar</button>
-                                <button class="btn-delete" :disabled="userStore.currentUser?.id === user.id"
-                                    @click="deleteUserAccount(user.id)">
-                                    Borrar
-                                </button>
-                            </td>
-                        </tr>
-                        <tr v-if="userStore.userList.length === 0">
-                            <td colspan="5" class="text-center">No hay usuarios cargados.</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div v-else class="admin-table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="user in userStore.userList" :key="user.id">
+                                <td>{{ user.id }}</td>
+                                <td>{{ user.name }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>
+                                    <span class="badge" :class="user.isAdmin ? 'role-admin' : 'role-user'">
+                                        {{ user.isAdmin ? 'Admin' : 'User' }}
+                                    </span>
+                                </td>
+                                <td class="acciones">
+                                    <button class="btn-edit" @click="openEditUserModal(user)">Editar</button>
+                                    <button class="btn-delete" :disabled="userStore.currentUser?.id === user.id"
+                                        @click="deleteUserAccount(user.id)">
+                                        Borrar
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr v-if="userStore.userList.length === 0">
+                                <td colspan="5" class="text-center">No hay usuarios cargados.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </section>
 
             <Transition name="modal-fade">
@@ -848,14 +852,21 @@ watch(activeTab, async (newTab) => {
     color: #88f7c2;
 }
 
+.admin-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #1e1e1e;
+}
+
 .admin-table {
     width: 100%;
+    min-width: 760px;
     border-collapse: collapse;
-    margin-top: 0.6rem;
-    background: #1e1e1e;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-top: 0;
+    background: transparent;
+    border: none;
 }
 
 .admin-table th,
@@ -1116,6 +1127,10 @@ watch(activeTab, async (newTab) => {
 
     .modal-form {
         grid-template-columns: 1fr;
+    }
+
+    .admin-table {
+        min-width: 680px;
     }
 
     .admin-table th,

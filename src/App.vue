@@ -6,7 +6,16 @@ import { useUserStore } from './stores/userStore';
 
 const audioPlayer = ref<HTMLAudioElement | null>(null);
 const wasBackgroundPlayingBeforePreview = ref(false);
+const isMenuOpen = ref(false);
 const userStore = useUserStore();
+
+const toggleMobileMenu = () => {
+  isMenuOpen.value = !isMenuOpen.value;
+};
+
+const closeMobileMenu = () => {
+  isMenuOpen.value = false;
+};
 
 const reproducirMusica = () => {
   if (audioPlayer.value) {
@@ -39,19 +48,31 @@ const handlePreviewPlaybackChange = (isPreviewPlaying: boolean) => {
 
   <header class="site-header">
     <nav class="navegacion-principal">
-      <RouterLink to="/">Discovery</RouterLink>
-      <RouterLink to="/admin">Backstage</RouterLink>
-      <RouterLink to="/research">Vue.js Lab</RouterLink>
+      <button
+        type="button"
+        class="menu-toggle"
+        :aria-expanded="isMenuOpen"
+        aria-label="Toggle navigation menu"
+        @click="toggleMobileMenu"
+      >
+        <i :class="isMenuOpen ? 'bi bi-x-lg' : 'bi bi-list'"></i>
+      </button>
 
-      <div v-if="userStore.currentUser" class="nav-user-status">
-        <div class="profile-chip">
-          <i class="bi bi-person-circle"></i>
-          <span>{{ userStore.currentUser.name }}</span>
-        </div>
+      <div class="nav-links" :class="{ open: isMenuOpen }">
+        <RouterLink to="/" @click="closeMobileMenu">Discovery</RouterLink>
+        <RouterLink to="/admin" @click="closeMobileMenu">Backstage</RouterLink>
+        <RouterLink to="/research" @click="closeMobileMenu">Vue.js Lab</RouterLink>
 
-        <div class="likes-indicator" aria-label="Favorite songs">
-          <i class="bi bi-heart-fill"></i>
-          <span class="likes-badge">{{ userStore.currentUser.likedPostIDs.length }}</span>
+        <div v-if="userStore.currentUser" class="nav-user-status">
+          <div class="profile-chip">
+            <i class="bi bi-person-circle"></i>
+            <span>{{ userStore.currentUser.name }}</span>
+          </div>
+
+          <div class="likes-indicator" aria-label="Favorite songs">
+            <i class="bi bi-heart-fill"></i>
+            <span class="likes-badge">{{ userStore.currentUser.likedPostIDs.length }}</span>
+          </div>
         </div>
       </div>
     </nav>
@@ -81,29 +102,53 @@ const handlePreviewPlaybackChange = (isPreviewPlaying: boolean) => {
   width: min(980px, 100%);
   margin: 0 auto;
   display: flex;
-  justify-content: flex-start;
-  gap: 0.8rem;
-  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
+  position: relative;
 }
 
-.navegacion-principal a {
+.menu-toggle {
+  display: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(42, 42, 42, 0.55);
+  color: #e9edf0;
+  cursor: pointer;
+}
+
+.menu-toggle i {
+  font-size: 1.2rem;
+}
+
+.nav-links {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.nav-links a {
   text-decoration: none;
   color: #d8d8d8;
   padding: 0.65rem 1.1rem;
+  white-space: nowrap;
+  text-align: center;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(42, 42, 42, 0.5);
   transition: transform 0.22s ease, border-color 0.22s ease, color 0.22s ease, background 0.22s ease;
 }
 
-.navegacion-principal a:hover {
+.nav-links a:hover {
   transform: translateY(-3px);
   border-color: rgba(0, 255, 136, 0.55);
   color: #00ff88;
 }
 
-.navegacion-principal a.router-link-active {
+.nav-links a.router-link-active {
   color: #03150c;
   background: #00ff88;
   border-color: #00ff88;
@@ -171,24 +216,71 @@ const handlePreviewPlaybackChange = (isPreviewPlaying: boolean) => {
   display: block;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 1024px) {
   .site-header {
     padding: 0.8rem;
   }
 
   .navegacion-principal {
-    gap: 0.6rem;
+    justify-content: space-between;
   }
 
-  .navegacion-principal a {
-    padding: 0.55rem 0.95rem;
-    font-size: 0.9rem;
+  .menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-links {
+    position: absolute;
+    top: calc(100% + 0.7rem);
+    left: 0;
+    right: 0;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+    padding: 0.8rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(16, 16, 16, 0.95);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.34);
+    z-index: 30;
+  }
+
+  .nav-links.open {
+    display: flex;
+  }
+
+  .nav-links a {
+    width: 100%;
+    transform: none;
+  }
+
+  .nav-links a:hover {
+    transform: none;
   }
 
   .nav-user-status {
     width: 100%;
     margin-left: 0;
-    justify-content: flex-end;
+    justify-content: space-between;
+    padding-top: 0.3rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+@media (max-width: 420px) {
+  .profile-chip {
+    max-width: 80%;
+    overflow: hidden;
+  }
+
+  .profile-chip span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 </style>
