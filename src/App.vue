@@ -2,9 +2,11 @@
 import { ref } from 'vue';
 import { RouterView } from 'vue-router';
 import LandingOverlay from './components/LandingOverlay.vue';
+import { useUserStore } from './stores/userStore';
 
 const audioPlayer = ref<HTMLAudioElement | null>(null);
 const wasBackgroundPlayingBeforePreview = ref(false);
+const userStore = useUserStore();
 
 const reproducirMusica = () => {
   if (audioPlayer.value) {
@@ -40,6 +42,18 @@ const handlePreviewPlaybackChange = (isPreviewPlaying: boolean) => {
       <RouterLink to="/">Discovery</RouterLink>
       <RouterLink to="/admin">Backstage</RouterLink>
       <RouterLink to="/research">Vue.js Lab</RouterLink>
+
+      <div v-if="userStore.currentUser" class="nav-user-status">
+        <div class="profile-chip">
+          <i class="bi bi-person-circle"></i>
+          <span>{{ userStore.currentUser.name }}</span>
+        </div>
+
+        <div class="likes-indicator" aria-label="Favorite songs">
+          <i class="bi bi-heart-fill"></i>
+          <span class="likes-badge">{{ userStore.currentUser.likedPostIDs.length }}</span>
+        </div>
+      </div>
     </nav>
   </header>
 
@@ -67,9 +81,10 @@ const handlePreviewPlaybackChange = (isPreviewPlaying: boolean) => {
   width: min(980px, 100%);
   margin: 0 auto;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.8rem;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .navegacion-principal a {
@@ -95,6 +110,63 @@ const handlePreviewPlaybackChange = (isPreviewPlaying: boolean) => {
   box-shadow: 0 8px 22px rgba(0, 255, 136, 0.26);
 }
 
+.nav-user-status {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.profile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 999px;
+  color: #e6ebef;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.profile-chip i {
+  font-size: 1.1rem;
+  color: #00ff88;
+}
+
+.likes-indicator {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff5568;
+}
+
+.likes-indicator i {
+  font-size: 1rem;
+}
+
+.likes-badge {
+  position: absolute;
+  top: -6px;
+  right: -7px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #00ff88;
+  color: #00130a;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  padding: 0 4px;
+  box-shadow: 0 0 0 2px rgba(10, 10, 10, 0.9);
+}
+
 .view-shell {
   display: block;
 }
@@ -104,9 +176,19 @@ const handlePreviewPlaybackChange = (isPreviewPlaying: boolean) => {
     padding: 0.8rem;
   }
 
+  .navegacion-principal {
+    gap: 0.6rem;
+  }
+
   .navegacion-principal a {
     padding: 0.55rem 0.95rem;
     font-size: 0.9rem;
+  }
+
+  .nav-user-status {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
   }
 }
 </style>

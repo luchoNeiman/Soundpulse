@@ -1,18 +1,82 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
+export interface AppUser {
+    id: number;
+    name: string;
+    password: string;
+    email: string;
+    isSubscribed: boolean;
+    isAdmin: boolean;
+    registerDate: string;
+    likedPostIDs: number[];
+}
+
 export const useUserStore = defineStore('user', () => {
     // Estado: guardo todo el objeto del usuario logueado (incluyendo sus likedPostIDs)
-    const currentUser = ref<any>(null);
+    const currentUser = ref<AppUser | null>(null);
+    const userList = ref<AppUser[]>([]);
+    const isUsersLoading = ref(false);
 
     // Acción: Iniciar sesión
-    const login = (userData: any) => {
+    const login = (userData: AppUser) => {
         currentUser.value = userData;
     };
 
     // Acción: Cerrar sesión
     const logout = () => {
         currentUser.value = null;
+    };
+
+    const fetchUsers = async () => {
+        isUsersLoading.value = true;
+        try {
+            const response = await fetch('/data/users.json');
+            const users = await response.json();
+
+            // Garantizo likedPostIDs para no romper la logica de favoritos.
+            userList.value = users.map((user: Partial<AppUser>) => ({
+                id: Number(user.id ?? 0),
+                name: user.name ?? '',
+                password: user.password ?? '',
+                email: user.email ?? '',
+                isSubscribed: Boolean(user.isSubscribed),
+                isAdmin: Boolean(user.isAdmin),
+                registerDate: user.registerDate ?? '',
+                likedPostIDs: Array.isArray(user.likedPostIDs) ? user.likedPostIDs : [],
+            }));
+        } catch (error) {
+            console.error('Error al cargar usuarios:', error);
+            userList.value = [];
+        } finally {
+            isUsersLoading.value = false;
+        }
+    };
+
+    const addUser = (user: AppUser) => {
+        userList.value.push({
+            ...user,
+            likedPostIDs: Array.isArray(user.likedPostIDs) ? user.likedPostIDs : [],
+        });
+    };
+
+    const updateUser = (updatedUser: AppUser) => {
+        const index = userList.value.findIndex(user => user.id === updatedUser.id);
+        if (index === -1) return;
+
+        userList.value[index] = {
+            ...updatedUser,
+            likedPostIDs: Array.isArray(updatedUser.likedPostIDs) ? updatedUser.likedPostIDs : [],
+        };
+
+        // Si se edita el mismo usuario logueado, sincronizo sesion actual.
+        if (currentUser.value?.id === updatedUser.id) {
+            currentUser.value = userList.value[index];
+        }
+    };
+
+    const deleteUser = (id: number) => {
+        userList.value = userList.value.filter(user => user.id !== id);
     };
 
     // Acción: Alternar el Me Gusta
@@ -42,5 +106,17 @@ export const useUserStore = defineStore('user', () => {
         return currentUser.value.likedPostIDs.includes(postId);
     };
 
-    return { currentUser, login, logout, toggleLike, isLiked };
+    return {
+        currentUser,
+        userList,
+        isUsersLoading,
+        login,
+        logout,
+        fetchUsers,
+        addUser,
+        updateUser,
+        deleteUser,
+        toggleLike,
+        isLiked,
+    };
 });

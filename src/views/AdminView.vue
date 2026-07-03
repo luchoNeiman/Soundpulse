@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { useUserStore } from '../stores/userStore';
+import { useUserStore, type AppUser } from '../stores/userStore';
 import { useMusicStore } from '../stores/musicStores';
 import { MusicalItem } from '../models/MusicalItem';
 
@@ -8,16 +8,16 @@ const enteredEmail = ref('');
 const enteredPassword = ref('');
 const errorMessage = ref('');
 const infoMessage = ref('');
-const accessGranted = ref(false);
 
+const activeTab = ref<'music' | 'users'>('music');
 const showModal = ref(false);
 const modalMode = ref<'create' | 'edit'>('create');
+const modalContentType = ref<'music' | 'user'>('music');
 const selectedGenre = ref('all');
 const selectedArtist = ref('all');
 const albumQuery = ref('');
 const apiGenreOptions = ref<string[]>([]);
 
-// Este objeto reactivo permite demostrar el two-way data binding del formulario.
 const formData = reactive({
     id: 0,
     type: 'song',
@@ -28,13 +28,28 @@ const formData = reactive({
     audioPreview: '',
 });
 
+const userFormData = reactive({
+    id: 0,
+    name: '',
+    email: '',
+    password: '',
+    isSubscribed: false,
+    isAdmin: false,
+    registerDate: '',
+    likedPostIDs: [] as number[],
+});
+
 const userStore = useUserStore();
 const musicStore = useMusicStore();
 
 const isSessionActive = computed(() => !!userStore.currentUser);
-const modalTitle = computed(() =>
-    modalMode.value === 'create' ? 'Agregar Contenido' : 'Editar Contenido'
-);
+const accessGranted = computed(() => userStore.currentUser?.isAdmin === true);
+const modalTitle = computed(() => {
+    if (modalContentType.value === 'music') {
+        return modalMode.value === 'create' ? 'Agregar Contenido' : 'Editar Contenido';
+    }
+    return modalMode.value === 'create' ? 'Agregar Usuario' : 'Editar Usuario';
+});
 
 const artistOptions = computed(() => {
     const allArtists = musicStore.musicList
@@ -51,8 +66,7 @@ const filteredMusicList = computed(() => {
     return musicStore.musicList.filter((item) => {
         const genreMatch = selectedGenre.value === 'all' || item.genre === selectedGenre.value;
         const artistMatch = selectedArtist.value === 'all' || item.artist === selectedArtist.value;
-        const albumMatch = !normalizedAlbumQuery
-            || item.title.toLowerCase().includes(normalizedAlbumQuery);
+        const albumMatch = !normalizedAlbumQuery || item.title.toLowerCase().includes(normalizedAlbumQuery);
 
         return genreMatch && artistMatch && albumMatch;
     });
@@ -81,64 +95,23 @@ const clearFilters = () => {
     albumQuery.value = '';
 };
 
-const tryLogin = async () => {
-    errorMessage.value = '';
-    infoMessage.value = '';
-
-    try {
-        const response = await fetch('/data/users.json');
-        const users = await response.json();
-        const foundUser = users.find(
-            (user: any) => user.email === enteredEmail.value && user.password === enteredPassword.value
-        );
-
-        if (!foundUser) {
-            errorMessage.value = 'Credenciales incorrectas. Intentalo nuevamente.';
-            return;
-        }
-
-        // Guardo la sesion en Pinia para cualquier usuario valido (admin o no admin).
-        userStore.login(foundUser);
-        enteredPassword.value = '';
-
-        if (foundUser.isAdmin) {
-            accessGranted.value = true;
-            infoMessage.value = 'Sesion iniciada como administrador.';
-            clearFilters();
-            await musicStore.fetchMusicFromAPI('music');
-            return;
-        }
-
-        accessGranted.value = false;
-        infoMessage.value = 'Sesion iniciada. Podes volver al Discovery Area para guardar tus favoritos.';
-    } catch (error) {
-        errorMessage.value = 'Ocurrio un error del sistema. Proba nuevamente mas tarde.';
-    }
-};
-
-const logoutSession = () => {
-    userStore.logout();
-    accessGranted.value = false;
-    showModal.value = false;
-    infoMessage.value = '';
-    errorMessage.value = '';
-    clearFilters();
-};
-
-const simulateRequest = (method: 'POST' | 'PUT' | 'DELETE', payload: unknown) => {
+const simulateRequest = (
+    method: 'POST' | 'PUT' | 'DELETE',
+    payload: unknown,
+    url: '/api/content' | '/api/users' = '/api/content',
+) => {
     const requestObject = {
         timestamp: new Date().toISOString(),
         method,
-        url: '/api/content',
+        url,
         body: payload,
         adminUser: userStore.currentUser?.email,
     };
 
-    // Esta salida replica la estructura de un request real para fines de testing.
-    console.log(`[REQUEST SIMULADO] ${method} /api/content`, requestObject);
+    console.log(`[REQUEST SIMULADO] ${method} ${url}`, requestObject);
 };
 
-const resetForm = () => {
+const resetMusicForm = () => {
     formData.id = 0;
     formData.type = 'song';
     formData.title = '';
@@ -148,13 +121,34 @@ const resetForm = () => {
     formData.audioPreview = '';
 };
 
-const openCreateModal = () => {
-    resetForm();
+const resetUserForm = () => {
+    userFormData.id = 0;
+    userFormData.name = '';
+    userFormData.email = '';
+    userFormData.password = '';
+    userFormData.isSubscribed = false;
+    userFormData.isAdmin = false;
+    userFormData.registerDate = new Date().toISOString().slice(0, 10);
+    userFormData.likedPostIDs = [];
+};
+
+const openCreateModal = (contentType: 'music' | 'user') => {
+    modalContentType.value = contentType;
     modalMode.value = 'create';
+
+    if (contentType === 'music') {
+        resetMusicForm();
+    } else {
+        resetUserForm();
+    }
+
     showModal.value = true;
 };
 
-const openEditModal = (item: MusicalItem) => {
+const openEditMusicModal = (item: MusicalItem) => {
+    modalContentType.value = 'music';
+    modalMode.value = 'edit';
+
     formData.id = item.id;
     formData.type = item.type;
     formData.title = item.title;
@@ -162,7 +156,23 @@ const openEditModal = (item: MusicalItem) => {
     formData.genre = item.genre;
     formData.image = item.image;
     formData.audioPreview = item.audioPreview;
+
+    showModal.value = true;
+};
+
+const openEditUserModal = (user: AppUser) => {
+    modalContentType.value = 'user';
     modalMode.value = 'edit';
+
+    userFormData.id = user.id;
+    userFormData.name = user.name;
+    userFormData.email = user.email;
+    userFormData.password = user.password;
+    userFormData.isSubscribed = user.isSubscribed;
+    userFormData.isAdmin = user.isAdmin;
+    userFormData.registerDate = user.registerDate;
+    userFormData.likedPostIDs = Array.isArray(user.likedPostIDs) ? [...user.likedPostIDs] : [];
+
     showModal.value = true;
 };
 
@@ -171,19 +181,46 @@ const closeModal = () => {
 };
 
 const saveItem = () => {
+    if (modalContentType.value === 'music') {
+        if (modalMode.value === 'create') {
+            const nextId = musicStore.musicList.length
+                ? Math.max(...musicStore.musicList.map(item => item.id)) + 1
+                : 1;
+            const newItem = new MusicalItem({ ...formData, id: nextId });
+
+            simulateRequest('POST', newItem, '/api/content');
+            musicStore.musicList.push(newItem);
+        } else {
+            const updatedItem = new MusicalItem({ ...formData });
+
+            simulateRequest('PUT', updatedItem, '/api/content');
+            musicStore.updateItem(updatedItem);
+        }
+
+        closeModal();
+        return;
+    }
+
     if (modalMode.value === 'create') {
-        const nextId = musicStore.musicList.length
-            ? Math.max(...musicStore.musicList.map(item => item.id)) + 1
+        const nextId = userStore.userList.length
+            ? Math.max(...userStore.userList.map(user => user.id)) + 1
             : 1;
-        const newItem = new MusicalItem({ ...formData, id: nextId });
+        const newUser: AppUser = {
+            ...userFormData,
+            id: nextId,
+            likedPostIDs: Array.isArray(userFormData.likedPostIDs) ? userFormData.likedPostIDs : [],
+        };
 
-        simulateRequest('POST', newItem);
-        musicStore.musicList.push(newItem);
+        simulateRequest('POST', newUser, '/api/users');
+        userStore.addUser(newUser);
     } else {
-        const updatedItem = new MusicalItem({ ...formData });
+        const updatedUser: AppUser = {
+            ...userFormData,
+            likedPostIDs: Array.isArray(userFormData.likedPostIDs) ? userFormData.likedPostIDs : [],
+        };
 
-        simulateRequest('PUT', updatedItem);
-        musicStore.updateItem(updatedItem);
+        simulateRequest('PUT', updatedUser, '/api/users');
+        userStore.updateUser(updatedUser);
     }
 
     closeModal();
@@ -193,8 +230,63 @@ const deleteContent = (id: number) => {
     const confirmDelete = confirm('Estas seguro de que deseas eliminar este contenido?');
     if (!confirmDelete) return;
 
-    simulateRequest('DELETE', { id });
+    simulateRequest('DELETE', { id }, '/api/content');
     musicStore.deleteItem(id);
+};
+
+const deleteUserAccount = (id: number) => {
+    if (userStore.currentUser && id === userStore.currentUser.id) {
+        alert('No podes borrar tu propio usuario administrador.');
+        return;
+    }
+
+    const confirmDelete = confirm('Estas seguro de que deseas eliminar este usuario?');
+    if (!confirmDelete) return;
+
+    simulateRequest('DELETE', { id }, '/api/users');
+    userStore.deleteUser(id);
+};
+
+const tryLogin = async () => {
+    errorMessage.value = '';
+    infoMessage.value = '';
+
+    try {
+        await userStore.fetchUsers();
+        const foundUser = userStore.userList.find(
+            (user) => user.email === enteredEmail.value && user.password === enteredPassword.value,
+        );
+
+        if (!foundUser) {
+            errorMessage.value = 'Credenciales incorrectas. Intentalo nuevamente.';
+            return;
+        }
+
+        userStore.login(foundUser);
+        infoMessage.value = foundUser.isAdmin
+            ? 'Sesion iniciada como administrador.'
+            : 'Sesion iniciada. Podes volver al Discovery Area para guardar tus favoritos.';
+
+        if (foundUser.isAdmin) {
+            activeTab.value = 'music';
+            clearFilters();
+            await Promise.all([
+                musicStore.fetchMusicFromAPI('music'),
+                userStore.fetchUsers(),
+            ]);
+        }
+    } catch (error) {
+        errorMessage.value = 'Ocurrio un error del sistema. Proba nuevamente mas tarde.';
+    }
+};
+
+const logoutSession = () => {
+    userStore.logout();
+    showModal.value = false;
+    activeTab.value = 'music';
+    infoMessage.value = '';
+    errorMessage.value = '';
+    clearFilters();
 };
 
 onMounted(() => {
@@ -202,12 +294,18 @@ onMounted(() => {
 });
 
 watch(selectedGenre, async (newGenre) => {
-    if (!accessGranted.value) return;
+    if (!accessGranted.value || activeTab.value !== 'music') return;
 
     const searchTerm = newGenre === 'all' ? 'music' : newGenre;
     await musicStore.fetchMusicFromAPI(searchTerm);
     selectedArtist.value = 'all';
     albumQuery.value = '';
+});
+
+watch(activeTab, async (newTab) => {
+    if (newTab === 'users' && userStore.userList.length === 0 && !userStore.isUsersLoading) {
+        await userStore.fetchUsers();
+    }
 });
 </script>
 
@@ -220,12 +318,12 @@ watch(selectedGenre, async (newGenre) => {
             <form @submit.prevent="tryLogin" class="form">
                 <div class="input-group">
                     <label for="email">Correo Electrónico</label>
-                    <input type="email" id="email" v-model="enteredEmail" required>
+                    <input id="email" v-model="enteredEmail" type="email" required>
                 </div>
 
                 <div class="input-group">
                     <label for="password">Contraseña</label>
-                    <input type="password" id="password" v-model="enteredPassword" required>
+                    <input id="password" v-model="enteredPassword" type="password" required>
                 </div>
 
                 <button type="submit" class="btn-login">Ingresar al Backstage</button>
@@ -241,7 +339,7 @@ watch(selectedGenre, async (newGenre) => {
                 {{ infoMessage || 'Podes volver al Discovery Area para guardar tus favoritos.' }}
             </p>
             <p class="session-user">Usuario activo: {{ userStore.currentUser?.name }}</p>
-            <button @click="logoutSession" class="btn-logout">Cerrar Sesion</button>
+            <button class="btn-logout" @click="logoutSession">Cerrar Sesion</button>
         </section>
 
         <section v-else class="dashboard">
@@ -249,14 +347,25 @@ watch(selectedGenre, async (newGenre) => {
                 <h2>Panel de Control - Soundpulse</h2>
                 <div class="user-info">
                     <span>Admin: {{ userStore.currentUser?.name }}</span>
-                    <button @click="logoutSession" class="btn-logout">Cerrar Sesion</button>
+                    <button class="btn-logout" @click="logoutSession">Cerrar Sesion</button>
                 </div>
             </header>
 
-            <section class="admin-content">
+            <nav class="dashboard-tabs" aria-label="Panel tabs">
+                <button type="button" class="tab-btn" :class="{ active: activeTab === 'music' }"
+                    @click="activeTab = 'music'">
+                    Music Library
+                </button>
+                <button type="button" class="tab-btn" :class="{ active: activeTab === 'users' }"
+                    @click="activeTab = 'users'">
+                    User Management
+                </button>
+            </nav>
+
+            <section v-if="activeTab === 'music'" class="admin-content">
                 <div class="table-toolbar">
                     <h3>Gestión de Biblioteca Musical</h3>
-                    <button @click="openCreateModal" class="btn-add">+ Agregar Contenido</button>
+                    <button class="btn-add" @click="openCreateModal('music')">+ Agregar Contenido</button>
                 </div>
 
                 <section class="filters-panel">
@@ -318,12 +427,57 @@ watch(selectedGenre, async (newGenre) => {
                             <td>{{ item.artist }}</td>
                             <td>{{ item.genre }}</td>
                             <td class="acciones">
-                                <button @click="openEditModal(item)" class="btn-edit">Editar</button>
-                                <button @click="deleteContent(item.id)" class="btn-delete">Borrar</button>
+                                <button class="btn-edit" @click="openEditMusicModal(item)">Editar</button>
+                                <button class="btn-delete" @click="deleteContent(item.id)">Borrar</button>
                             </td>
                         </tr>
                         <tr v-if="filteredMusicList.length === 0">
                             <td colspan="6" class="text-center">No hay contenido en la biblioteca.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section v-else class="admin-content">
+                <div class="table-toolbar">
+                    <h3>Gestión de Usuarios</h3>
+                    <button class="btn-add" @click="openCreateModal('user')">+ Agregar Usuario</button>
+                </div>
+
+                <div v-if="userStore.isUsersLoading" class="loading-state">
+                    Cargando usuarios...
+                </div>
+
+                <table v-else class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="user in userStore.userList" :key="user.id">
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                <span class="badge" :class="user.isAdmin ? 'role-admin' : 'role-user'">
+                                    {{ user.isAdmin ? 'Admin' : 'User' }}
+                                </span>
+                            </td>
+                            <td class="acciones">
+                                <button class="btn-edit" @click="openEditUserModal(user)">Editar</button>
+                                <button class="btn-delete" :disabled="userStore.currentUser?.id === user.id"
+                                    @click="deleteUserAccount(user.id)">
+                                    Borrar
+                                </button>
+                            </td>
+                        </tr>
+                        <tr v-if="userStore.userList.length === 0">
+                            <td colspan="5" class="text-center">No hay usuarios cargados.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -334,44 +488,78 @@ watch(selectedGenre, async (newGenre) => {
                     <div class="modal-box" role="dialog" aria-modal="true" :aria-label="modalTitle">
                         <header class="modal-header">
                             <h3>{{ modalTitle }}</h3>
-                            <button class="btn-close" @click="closeModal" aria-label="Cerrar modal">
+                            <button class="btn-close" aria-label="Cerrar modal" @click="closeModal">
                                 <i class="bi bi-x-lg"></i>
                             </button>
                         </header>
 
                         <form class="modal-form" @submit.prevent="saveItem">
-                            <label class="field">
-                                <span>Tipo</span>
-                                <select v-model="formData.type" required>
-                                    <option value="song">Song</option>
-                                    <option value="album">Album</option>
-                                </select>
-                            </label>
+                            <template v-if="modalContentType === 'music'">
+                                <label class="field">
+                                    <span>Tipo</span>
+                                    <select v-model="formData.type" required>
+                                        <option value="song">Song</option>
+                                        <option value="album">Album</option>
+                                    </select>
+                                </label>
 
-                            <label class="field">
-                                <span>Titulo</span>
-                                <input v-model="formData.title" type="text" required>
-                            </label>
+                                <label class="field">
+                                    <span>Titulo</span>
+                                    <input v-model="formData.title" type="text" required>
+                                </label>
 
-                            <label class="field">
-                                <span>Artista</span>
-                                <input v-model="formData.artist" type="text" required>
-                            </label>
+                                <label class="field">
+                                    <span>Artista</span>
+                                    <input v-model="formData.artist" type="text" required>
+                                </label>
 
-                            <label class="field">
-                                <span>Genero</span>
-                                <input v-model="formData.genre" type="text" required>
-                            </label>
+                                <label class="field">
+                                    <span>Genero</span>
+                                    <input v-model="formData.genre" type="text" required>
+                                </label>
 
-                            <label class="field">
-                                <span>Imagen URL</span>
-                                <input v-model="formData.image" type="url" required>
-                            </label>
+                                <label class="field">
+                                    <span>Imagen URL</span>
+                                    <input v-model="formData.image" type="url" required>
+                                </label>
 
-                            <label class="field">
-                                <span>Audio Preview URL</span>
-                                <input v-model="formData.audioPreview" type="url" required>
-                            </label>
+                                <label class="field">
+                                    <span>Audio Preview URL</span>
+                                    <input v-model="formData.audioPreview" type="url" required>
+                                </label>
+                            </template>
+
+                            <template v-else-if="modalContentType === 'user'">
+                                <label class="field">
+                                    <span>Name</span>
+                                    <input v-model="userFormData.name" type="text" required>
+                                </label>
+
+                                <label class="field">
+                                    <span>Email</span>
+                                    <input v-model="userFormData.email" type="email" required>
+                                </label>
+
+                                <label class="field">
+                                    <span>Password</span>
+                                    <input v-model="userFormData.password" type="text" required>
+                                </label>
+
+                                <label class="field">
+                                    <span>Register Date</span>
+                                    <input v-model="userFormData.registerDate" type="date" required>
+                                </label>
+
+                                <label class="field checkbox-field">
+                                    <span>Is Subscribed</span>
+                                    <input v-model="userFormData.isSubscribed" type="checkbox">
+                                </label>
+
+                                <label class="field checkbox-field">
+                                    <span>Is Admin</span>
+                                    <input v-model="userFormData.isAdmin" type="checkbox">
+                                </label>
+                            </template>
 
                             <div class="modal-actions">
                                 <button type="button" class="btn-secondary" @click="closeModal">Cancelar</button>
@@ -504,7 +692,7 @@ watch(selectedGenre, async (newGenre) => {
     gap: 1rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     padding-bottom: 1rem;
-    margin-bottom: 1.3rem;
+    margin-bottom: 1rem;
 }
 
 .dashboard-header h2 {
@@ -516,6 +704,39 @@ watch(selectedGenre, async (newGenre) => {
     align-items: center;
     gap: 1rem;
     color: #ced4da;
+}
+
+.dashboard-tabs {
+    display: inline-flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 0.35rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(20, 20, 20, 0.6);
+    backdrop-filter: blur(10px);
+}
+
+.tab-btn {
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    background: transparent;
+    color: #b9c0c7;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+    color: #f4f8fb;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.tab-btn.active {
+    color: #00180d;
+    background: #00ff88;
+    box-shadow: 0 6px 16px rgba(0, 255, 136, 0.26);
 }
 
 .btn-logout {
@@ -670,6 +891,16 @@ watch(selectedGenre, async (newGenre) => {
     border: 1px solid rgba(0, 255, 136, 0.45);
 }
 
+.role-admin {
+    color: #00ff88;
+    border-color: rgba(0, 255, 136, 0.45);
+}
+
+.role-user {
+    color: #8fc9ff;
+    border-color: rgba(143, 201, 255, 0.45);
+}
+
 .acciones {
     display: flex;
     gap: 0.45rem;
@@ -699,6 +930,11 @@ watch(selectedGenre, async (newGenre) => {
 .btn-delete {
     background: #ff4747;
     color: white;
+}
+
+.btn-delete:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .text-center {
@@ -786,6 +1022,18 @@ watch(selectedGenre, async (newGenre) => {
     box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.14);
 }
 
+.checkbox-field {
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.checkbox-field input {
+    width: 22px;
+    height: 22px;
+    accent-color: #00ff88;
+    align-self: flex-start;
+}
+
 .modal-actions {
     grid-column: 1 / -1;
     display: flex;
@@ -850,6 +1098,16 @@ watch(selectedGenre, async (newGenre) => {
 @media (max-width: 640px) {
     .admin-container {
         padding: 1rem 0.75rem 2rem;
+    }
+
+    .dashboard-tabs {
+        display: flex;
+        width: 100%;
+    }
+
+    .tab-btn {
+        flex: 1 1 0;
+        text-align: center;
     }
 
     .filters-grid {
