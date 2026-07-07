@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import LabPlayer from '../components/LabPlayer.vue';
 
 // Estado reactivo para el ejemplo de reactividad (slider de volumen).
 const masterVolume = ref(72);
@@ -12,37 +13,130 @@ const conditionalMode = ref<'if' | 'show'>('if');
 const passName = ref('');
 const passRole = ref('Artist');
 
+// Estado para el ejemplo de watch con simulacion asincronica.
+const bandQuery = ref('');
+const bandSearchStatus = ref<'idle' | 'loading' | 'done'>('idle');
+const bandSearchResult = ref('');
+
+// Estado para el ejemplo de comunicacion entre componentes (props y emit).
+const selectedTrack = ref('Neon Skyline');
+const playbackMessage = ref('');
+
+// Estado para el ejemplo de listas con v-for y TransitionGroup.
+const queueIdCounter = ref(4);
+const queuedSongs = ref([
+    { id: 1, title: 'Electric Avenue' },
+    { id: 2, title: 'Midnight Runner' },
+    { id: 3, title: 'Ocean Drive' },
+]);
+
+const randomSongPool = [
+    'Silver Horizon',
+    'Echo Pulse',
+    'Crystal Night',
+    'Velvet Synth',
+    'Urban Starlight',
+];
+
+const demoBandCatalog = [
+    'Daft Punk',
+    'Arctic Monkeys',
+    'Radiohead',
+    'Muse',
+    'Soda Stereo',
+    'The Strokes',
+    'Tame Impala',
+    'Babasónicos',
+    'Coldplay',
+    'The Killers',
+];
+
+let bandSearchTimer: ReturnType<typeof setTimeout> | undefined;
+
 const visualScale = computed(() => Math.max(masterVolume.value / 100, 0.08));
 const visualWidth = computed(() => `${Math.max(masterVolume.value, 8)}%`);
 const visualGlow = computed(() => 0.1 + (masterVolume.value / 100) * 0.55);
 
 const roleTagline = computed(() => {
-    if (passRole.value === 'Artist') return 'Main stage performer access';
-    if (passRole.value === 'VIP Guest') return 'Premium lounge and backstage access';
-    return 'Operational and production access';
+    if (passRole.value === 'Artist') return 'Acceso principal al escenario';
+    if (passRole.value === 'VIP Guest') return 'Acceso a lounge premium y backstage';
+    return 'Acceso operativo y de producción';
+});
+
+const addRandomSong = () => {
+    const randomIndex = Math.floor(Math.random() * randomSongPool.length);
+    const randomTitle = randomSongPool[randomIndex] ?? 'Tema sorpresa';
+    queuedSongs.value.push({
+        id: queueIdCounter.value,
+        title: randomTitle,
+    });
+    queueIdCounter.value += 1;
+};
+
+const removeQueuedSong = (songId: number) => {
+    queuedSongs.value = queuedSongs.value.filter((song) => song.id !== songId);
+};
+
+const handlePlayTrack = (trackName: string) => {
+    playbackMessage.value = `Reproduciendo: ${trackName}`;
+};
+
+watch(bandQuery, (newQuery) => {
+    if (bandSearchTimer) {
+        clearTimeout(bandSearchTimer);
+    }
+
+    const normalizedQuery = newQuery.trim();
+    if (!normalizedQuery) {
+        bandSearchStatus.value = 'idle';
+        bandSearchResult.value = '';
+        return;
+    }
+
+    bandSearchStatus.value = 'loading';
+    bandSearchResult.value = '';
+
+    // Simulo una consulta asincrónica para mostrar uso real de watch con efectos secundarios.
+    bandSearchTimer = setTimeout(() => {
+        const lowerQuery = normalizedQuery.toLowerCase();
+        const matchedBand = demoBandCatalog.find((band) =>
+            band.toLowerCase().includes(lowerQuery),
+        );
+
+        bandSearchStatus.value = 'done';
+        bandSearchResult.value = matchedBand
+            ? `Resultado encontrado: ${matchedBand}`
+            : `Sin resultados para "${normalizedQuery}"`;
+    }, 950);
+});
+
+onBeforeUnmount(() => {
+    if (bandSearchTimer) {
+        clearTimeout(bandSearchTimer);
+    }
 });
 </script>
 
 <template>
     <main class="research-container">
         <header class="intro">
-            <h1>Vue.js Interactive Lab</h1>
+            <h1>Laboratorio Interactivo de Vue.js</h1>
             <p>
-                A practical walkthrough of three core Vue concepts used in this project.
-                Every panel below is fully interactive.
+                Recorrido práctico por seis conceptos fundamentales de Vue.
+                Cada módulo incluye una demostración interactiva aplicada al contexto musical de Soundpulse.
             </p>
         </header>
 
         <section class="lab-grid">
             <article class="lab-card">
-                <h2>1) Reactivity and State</h2>
+                <h2>1) Reactividad y Estado</h2>
                 <p>
-                    In Vue, <strong>ref</strong> and <strong>reactive</strong> create reactive state.
-                    When state changes, the DOM updates immediately without manual refresh logic.
+                    En Vue, <strong>ref</strong> y <strong>reactive</strong> crean estado reactivo.
+                    Cuando el estado cambia, el DOM se actualiza al instante sin refrescos manuales.
                 </p>
 
                 <div class="control-group">
-                    <label for="volume-range">Master Volume</label>
+                    <label for="volume-range">Volumen maestro</label>
                     <input id="volume-range" v-model="masterVolume" type="range" min="0" max="100">
                 </div>
 
@@ -58,19 +152,19 @@ const roleTagline = computed(() => {
             </article>
 
             <article class="lab-card">
-                <h2>2) Conditional Rendering</h2>
+                <h2>2) Directivas y Renderizado Condicional</h2>
                 <p>
-                    <strong>v-if</strong> mounts/unmounts an element from the DOM.
-                    <strong>v-show</strong> keeps it in the DOM and only toggles CSS display.
+                    <strong>v-if</strong> monta o destruye nodos del DOM.
+                    <strong>v-show</strong> mantiene el nodo y solo alterna su visibilidad con CSS.
                 </p>
 
                 <div class="switch-row">
                     <button type="button" class="switch-btn" :class="{ active: isAmpOn }" @click="isAmpOn = !isAmpOn">
-                        {{ isAmpOn ? 'Amplifier ON' : 'Amplifier OFF' }}
+                        {{ isAmpOn ? 'Amplificador ENCENDIDO' : 'Amplificador APAGADO' }}
                     </button>
 
                     <label class="mode-select">
-                        Render mode
+                        Modo de renderizado
                         <select v-model="conditionalMode">
                             <option value="if">v-if</option>
                             <option value="show">v-show</option>
@@ -88,25 +182,25 @@ const roleTagline = computed(() => {
                 </Transition>
 
                 <p class="mode-caption">
-                    Current demo mode: <strong>{{ conditionalMode === 'if' ? 'v-if' : 'v-show' }}</strong>
+                    Modo actual de demostración: <strong>{{ conditionalMode === 'if' ? 'v-if' : 'v-show' }}</strong>
                 </p>
             </article>
 
             <article class="lab-card">
                 <h2>3) Two-Way Data Binding (v-model)</h2>
                 <p>
-                    <strong>v-model</strong> synchronizes input fields and component state in both directions,
-                    making forms feel immediate and predictable.
+                    <strong>v-model</strong> sincroniza bidireccionalmente los inputs con el estado del componente,
+                    permitiendo interfaces inmediatas y predecibles.
                 </p>
 
                 <form class="pass-form" @submit.prevent>
                     <label>
-                        Full Name
-                        <input v-model="passName" type="text" placeholder="Type attendee name...">
+                        Nombre completo
+                        <input v-model="passName" type="text" placeholder="Escribí el nombre del asistente...">
                     </label>
 
                     <label>
-                        Role
+                        Rol
                         <select v-model="passRole">
                             <option>Artist</option>
                             <option>VIP Guest</option>
@@ -118,16 +212,84 @@ const roleTagline = computed(() => {
                 <div class="pass-preview">
                     <div class="pass-header">
                         <span class="pass-brand">SOUNDPULSE</span>
-                        <span class="pass-type">VIP BACKSTAGE PASS</span>
+                        <span class="pass-type">PASE VIP BACKSTAGE</span>
                     </div>
 
                     <div class="pass-body">
-                        <p class="pass-name">{{ passName || 'Your Name Here' }}</p>
+                        <p class="pass-name">{{ passName || 'Tu nombre aquí' }}</p>
                         <p class="pass-role">{{ passRole }}</p>
                         <p class="pass-tagline">{{ roleTagline }}</p>
                     </div>
                 </div>
             </article>
+
+            <article class="lab-card">
+                <h2>4) Watchers y Estado Asincrónico</h2>
+                <p>
+                    <strong>watch</strong> observa cambios en variables reactivas para ejecutar
+                    efectos secundarios, por ejemplo disparar una búsqueda asincrónica.
+                </p>
+
+                <div class="control-group">
+                    <label for="band-search">Buscar banda</label>
+                    <input
+                        id="band-search"
+                        v-model="bandQuery"
+                        type="text"
+                        placeholder="Escribí una banda..."
+                    >
+                </div>
+
+                <p v-if="bandSearchStatus === 'loading'" class="status-text">Buscando en la base de datos...</p>
+                <p v-else-if="bandSearchStatus === 'done'" class="status-text success-text">{{ bandSearchResult }}</p>
+                <p v-else class="status-text subtle-text">Esperando una consulta para iniciar la búsqueda.</p>
+            </article>
+
+            <article class="lab-card">
+                <h2>5) Comunicación entre Componentes</h2>
+                <p>
+                    En Vue, los datos bajan con <strong>props</strong> y los eventos suben con
+                    <strong>emit</strong>, respetando un flujo unidireccional de información.
+                </p>
+
+                <div class="control-group">
+                    <label for="track-select">Pista para enviar al componente hijo</label>
+                    <select id="track-select" v-model="selectedTrack" class="solid-select">
+                        <option>Neon Skyline</option>
+                        <option>Pulse of the Night</option>
+                        <option>Afterglow Avenue</option>
+                    </select>
+                </div>
+
+                <LabPlayer :track-title="selectedTrack" @play-track="handlePlayTrack" />
+
+                <p v-if="playbackMessage" class="status-text success-text">{{ playbackMessage }}</p>
+                <p v-else class="status-text subtle-text">Todavía no se reprodujo ninguna pista.</p>
+            </article>
+
+            <article class="lab-card">
+                <h2>6) Renderizado de Listas (v-for y :key)</h2>
+                <p>
+                    <strong>v-for</strong> recorre arreglos para renderizar elementos.
+                    El atributo <strong>:key</strong> ayuda al Virtual DOM a identificar cada nodo y actualizarlo de forma eficiente.
+                </p>
+
+                <div class="queue-actions">
+                    <button type="button" class="switch-btn" @click="addRandomSong">
+                        Agregar canción aleatoria
+                    </button>
+                </div>
+
+                <TransitionGroup name="queue-list" tag="ul" class="queue-list">
+                    <li v-for="song in queuedSongs" :key="song.id" class="queue-item">
+                        <span>{{ song.title }}</span>
+                        <button type="button" class="remove-btn" @click="removeQueuedSong(song.id)">
+                            Quitar
+                        </button>
+                    </li>
+                </TransitionGroup>
+            </article>
+
         </section>
     </main>
 </template>
@@ -162,7 +324,7 @@ const roleTagline = computed(() => {
 
 .lab-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1rem;
 }
 
@@ -264,6 +426,7 @@ input[type='range'] {
 }
 
 .mode-select select,
+.solid-select,
 .pass-form input,
 .pass-form select {
     border-radius: 8px;
@@ -381,6 +544,68 @@ input[type='range'] {
     margin: 0.45rem 0 0;
     font-size: 0.82rem;
     color: #9fa8b1;
+}
+
+.status-text {
+    margin: 0.75rem 0 0;
+    font-size: 0.9rem;
+    color: #b9c2c9;
+}
+
+.success-text {
+    color: #86ffc3;
+}
+
+.subtle-text {
+    color: #98a2ac;
+}
+
+.queue-actions {
+    margin-bottom: 0.6rem;
+}
+
+.queue-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.queue-item {
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.36);
+    padding: 0.55rem 0.65rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.7rem;
+    align-items: center;
+}
+
+.remove-btn {
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    background: rgba(255, 86, 86, 0.16);
+    color: #ffd5d5;
+    padding: 0.32rem 0.58rem;
+    cursor: pointer;
+}
+
+.queue-list-enter-active,
+.queue-list-leave-active {
+    transition: all 0.24s ease;
+}
+
+.queue-list-enter-from,
+.queue-list-leave-to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+}
+
+.queue-list-move {
+    transition: transform 0.24s ease;
 }
 
 @media (max-width: 1024px) {
