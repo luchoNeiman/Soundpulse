@@ -4,11 +4,13 @@ import { useUserStore, type AppUser } from '../stores/userStore';
 import { useMusicStore } from '../stores/musicStores';
 import { MusicalItem } from '../models/MusicalItem';
 
+// Acá guardo los datos del formulario de acceso.
 const enteredEmail = ref('');
 const enteredPassword = ref('');
 const errorMessage = ref('');
 const infoMessage = ref('');
 
+// Acá controlo las secciones y modales del panel admin.
 const activeTab = ref<'music' | 'users'>('music');
 const showModal = ref(false);
 const modalMode = ref<'create' | 'edit'>('create');
@@ -18,6 +20,7 @@ const selectedArtist = ref('all');
 const albumQuery = ref('');
 const apiGenreOptions = ref<string[]>([]);
 
+// Acá mantengo el estado del formulario para crear/editar música.
 const formData = reactive({
     id: 0,
     type: 'song',
@@ -28,6 +31,7 @@ const formData = reactive({
     audioPreview: '',
 });
 
+// Acá mantengo el estado del formulario para crear/editar usuarios.
 const userFormData = reactive({
     id: 0,
     name: '',
@@ -42,6 +46,7 @@ const userFormData = reactive({
 const userStore = useUserStore();
 const musicStore = useMusicStore();
 
+// Acá derivo estados para saber qué parte de la UI debo renderizar.
 const isSessionActive = computed(() => !!userStore.currentUser);
 const accessGranted = computed(() => userStore.currentUser?.isAdmin === true);
 const modalTitle = computed(() => {
@@ -52,6 +57,7 @@ const modalTitle = computed(() => {
 });
 
 const artistOptions = computed(() => {
+    // Acá armo un catálogo único de artistas para el filtro.
     const allArtists = musicStore.musicList
         .map(item => item.artist)
         .filter((artist, index, arr) => !!artist && arr.indexOf(artist) === index)
@@ -61,6 +67,7 @@ const artistOptions = computed(() => {
 });
 
 const filteredMusicList = computed(() => {
+    // Acá aplico filtros combinados sobre la tabla de música.
     const normalizedAlbumQuery = albumQuery.value.trim().toLowerCase();
 
     return musicStore.musicList.filter((item) => {
@@ -74,6 +81,7 @@ const filteredMusicList = computed(() => {
 
 const loadGenreOptionsFromAPI = async () => {
     try {
+        // Acá traigo un listado amplio para poblar el select de géneros.
         const response = await fetch('https://itunes.apple.com/search?term=music&entity=song&limit=200');
         const data = await response.json();
 
@@ -90,6 +98,7 @@ const loadGenreOptionsFromAPI = async () => {
 };
 
 const clearFilters = () => {
+    // Acá reinicio todos los filtros de la tabla musical.
     selectedGenre.value = 'all';
     selectedArtist.value = 'all';
     albumQuery.value = '';
@@ -100,6 +109,7 @@ const simulateRequest = (
     payload: unknown,
     url: '/api/content' | '/api/users' = '/api/content',
 ) => {
+    // Acá simulo la estructura de un request real para explicar el flujo CRUD.
     const requestObject = {
         timestamp: new Date().toISOString(),
         method,
@@ -112,6 +122,7 @@ const simulateRequest = (
 };
 
 const resetMusicForm = () => {
+    // Acá limpio el formulario de música antes de crear un nuevo registro.
     formData.id = 0;
     formData.type = 'song';
     formData.title = '';
@@ -122,6 +133,7 @@ const resetMusicForm = () => {
 };
 
 const resetUserForm = () => {
+    // Acá limpio el formulario de usuario y pongo una fecha por defecto.
     userFormData.id = 0;
     userFormData.name = '';
     userFormData.email = '';
@@ -133,6 +145,7 @@ const resetUserForm = () => {
 };
 
 const openCreateModal = (contentType: 'music' | 'user') => {
+    // Acá preparo el modal en modo creación según el tipo de contenido.
     modalContentType.value = contentType;
     modalMode.value = 'create';
 
@@ -146,6 +159,7 @@ const openCreateModal = (contentType: 'music' | 'user') => {
 };
 
 const openEditMusicModal = (item: MusicalItem) => {
+    // Acá precargo datos de un item para editar música sin perder contexto.
     modalContentType.value = 'music';
     modalMode.value = 'edit';
 
@@ -161,6 +175,7 @@ const openEditMusicModal = (item: MusicalItem) => {
 };
 
 const openEditUserModal = (user: AppUser) => {
+    // Acá precargo datos del usuario seleccionado para edición.
     modalContentType.value = 'user';
     modalMode.value = 'edit';
 
@@ -177,10 +192,12 @@ const openEditUserModal = (user: AppUser) => {
 };
 
 const closeModal = () => {
+    // Acá cierro cualquier modal abierto.
     showModal.value = false;
 };
 
 const saveItem = () => {
+    // Acá ramifico la lógica de guardado según tipo y modo del modal.
     if (modalContentType.value === 'music') {
         if (modalMode.value === 'create') {
             const nextId = musicStore.musicList.length
@@ -227,6 +244,7 @@ const saveItem = () => {
 };
 
 const deleteContent = (id: number) => {
+    // Acá pido confirmación antes de borrar un contenido musical.
     const confirmDelete = confirm('Estas seguro de que deseas eliminar este contenido?');
     if (!confirmDelete) return;
 
@@ -235,6 +253,7 @@ const deleteContent = (id: number) => {
 };
 
 const deleteUserAccount = (id: number) => {
+    // Acá evito que el admin elimine su propia cuenta activa.
     if (userStore.currentUser && id === userStore.currentUser.id) {
         alert('No podes borrar tu propio usuario administrador.');
         return;
@@ -248,6 +267,7 @@ const deleteUserAccount = (id: number) => {
 };
 
 const tryLogin = async () => {
+    // Acá valido credenciales y luego habilito el flujo de admin o de usuario común.
     errorMessage.value = '';
     infoMessage.value = '';
 
@@ -281,6 +301,7 @@ const tryLogin = async () => {
 };
 
 const logoutSession = () => {
+    // Acá cierro sesión y restauro estados de la vista.
     userStore.logout();
     showModal.value = false;
     activeTab.value = 'music';
@@ -290,10 +311,12 @@ const logoutSession = () => {
 };
 
 onMounted(() => {
+    // Acá cargo datos mínimos al montar la vista.
     loadGenreOptionsFromAPI();
 });
 
 watch(selectedGenre, async (newGenre) => {
+    // Acá recargo catálogo musical cuando cambia el género activo.
     if (!accessGranted.value || activeTab.value !== 'music') return;
 
     const searchTerm = newGenre === 'all' ? 'music' : newGenre;
@@ -303,6 +326,7 @@ watch(selectedGenre, async (newGenre) => {
 });
 
 watch(activeTab, async (newTab) => {
+    // Acá cargo usuarios al entrar por primera vez a la pestaña de usuarios.
     if (newTab === 'users' && userStore.userList.length === 0 && !userStore.isUsersLoading) {
         await userStore.fetchUsers();
     }

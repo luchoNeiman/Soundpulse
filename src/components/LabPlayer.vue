@@ -4,7 +4,7 @@ const props = defineProps<{
     trackTitle: string
 }>();
 
-// Emite al componente padre el evento para simular reproducción.
+// Acá emito al componente padre el evento para simular reproducción.
 const emit = defineEmits<{
     playTrack: [trackName: string]
 }>();

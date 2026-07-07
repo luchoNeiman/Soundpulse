@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+// Acá controlo si el overlay de bienvenida sigue visible.
 const visible = ref(true);
+// Acá emito una señal al padre para indicarle cuándo empezar la experiencia.
 const emit = defineEmits(['iniciar']);
 
 const manejarInicio = () => {
     visible.value = false;
-    // Emito un evento hacia el padre (App.vue) para avisar que ya puede sonar
+    // Acá aviso al padre (App.vue) que ya puede comenzar la música.
     emit('iniciar');
 };
 </script>

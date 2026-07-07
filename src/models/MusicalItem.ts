@@ -5,9 +5,11 @@ export class MusicalItem {
     genre: string;
     image: string;
     type: string;
-    audioPreview: string; // Nueva propiedad para la URL de la vista previa de audio
+    // Acá guardo la URL de preview para reproducir fragmentos cortos.
+    audioPreview: string;
 
     constructor(data: any) {
+        // Acá tomo los datos crudos y los adapto al formato interno de mi app.
         this.id = data.id;
 
         this.title = data.title || data.name;
@@ -15,10 +17,10 @@ export class MusicalItem {
         this.genre = data.genre || "Unspecified Genre";
         this.image = data.image || "default-image.jpg";
         this.type = data.type;
-        this.audioPreview = data.audioPreview || ""; // Asignar la URL de la vista previa de audio
+        this.audioPreview = data.audioPreview || "";
     }
 
-    // Unifico los métodos en uno que sea descriptivo
+    // Acá devuelvo un texto resumido que me sirve para mostrar info en tarjetas.
     get summaryInfo(): string {
         return `${this.title} - ${this.artist} (${this.genre})`;
     }

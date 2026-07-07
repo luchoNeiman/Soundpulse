@@ -3,8 +3,8 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useMusicStore } from '../stores/musicStores';
 import MusicalCard from '../components/MusicalCard.vue';
 
-const musicStore = useMusicStore(); // Accedo al store de música
-const previewPlayer = ref<HTMLAudioElement | null>(null); // Referencia al elemento de audio para reproducir previews
+const musicStore = useMusicStore(); // Acá accedo al store de música global.
+const previewPlayer = ref<HTMLAudioElement | null>(null); // Acá guardo el reproductor para previews.
 const activePreviewPath = ref('');
 const isPreviewPlaying = ref(false);
 const selectedGenre = ref('all');
@@ -22,14 +22,14 @@ const handlePreviewToggle = (audioPath: string) => {
         const isSameTrack = activePreviewPath.value === audioPath;
 
         if (isSameTrack && isPreviewPlaying.value) {
-            // Si es la misma pista y ya está sonando, pauso.
+            // Acá pauso cuando vuelvo a tocar la misma pista que ya estaba sonando.
             previewPlayer.value.pause();
             isPreviewPlaying.value = false;
             emit('previewPlaybackChange', false);
             return;
         }
 
-        // Si cambia la pista o estaba pausada, preparo y reproduzco.
+        // Acá preparo la nueva pista (o retomo) y luego la reproduzco.
         if (!isSameTrack) {
             previewPlayer.value.src = audioPath;
             activePreviewPath.value = audioPath;
@@ -43,6 +43,7 @@ const handlePreviewToggle = (audioPath: string) => {
 };
 
 const artistOptions = computed(() => {
+    // Acá construyo dinámicamente la lista de artistas únicos para el filtro.
     const allArtists = musicStore.musicList
         .map(item => item.artist)
         .filter((artist, index, arr) => !!artist && arr.indexOf(artist) === index)
@@ -52,6 +53,7 @@ const artistOptions = computed(() => {
 });
 
 const filteredMusicList = computed(() => {
+    // Acá aplico todos los filtros activos sobre la lista musical.
     const normalizedAlbumQuery = albumQuery.value.trim().toLowerCase();
 
     return musicStore.musicList.filter((item) => {
@@ -66,11 +68,12 @@ const filteredMusicList = computed(() => {
 
 const visibleMusicList = computed(() => filteredMusicList.value.slice(0, visibleCardsCount.value));
 
+// Acá verifico si todavía tengo más tarjetas para mostrar.
 const canLoadMore = computed(() => visibleCardsCount.value < filteredMusicList.value.length);
 
 const loadGenreOptionsFromAPI = async () => {
     try {
-        // Consulto un set amplio para construir el catalogo real de generos devueltos por la API.
+        // Acá consulto un set amplio para construir el catálogo real de géneros.
         const response = await fetch('https://itunes.apple.com/search?term=music&entity=song&limit=200');
         const data = await response.json();
 
@@ -87,6 +90,7 @@ const loadGenreOptionsFromAPI = async () => {
 };
 
 const clearFilters = () => {
+    // Acá restablezco filtros y paginación a su estado inicial.
     selectedGenre.value = 'all';
     selectedArtist.value = 'all';
     albumQuery.value = '';
@@ -94,16 +98,18 @@ const clearFilters = () => {
 };
 
 const loadMoreCards = () => {
+    // Acá aumento la cantidad de tarjetas visibles sin volver a consultar la API.
     visibleCardsCount.value += 3;
 };
 
 onMounted(() => {
+    // Acá cargo géneros y catálogo inicial cuando la vista se monta por primera vez.
     loadGenreOptionsFromAPI();
     musicStore.fetchMusicFromAPI('music');
 });
 
 watch(selectedGenre, async (newGenre) => {
-    // Actualizo la URL dinamica de la API segun genero elegido por usuario.
+    // Acá actualizo el término de búsqueda según el género elegido.
     const searchTerm = newGenre === 'all' ? 'music' : newGenre;
     await musicStore.fetchMusicFromAPI(searchTerm);
     selectedArtist.value = 'all';
@@ -154,11 +160,7 @@ watch(selectedGenre, async (newGenre) => {
 
                 <label class="filter-field filter-search">
                     <span>Album / Cancion</span>
-                    <input
-                        v-model="albumQuery"
-                        type="text"
-                        placeholder="Buscar por titulo..."
-                    >
+                    <input v-model="albumQuery" type="text" placeholder="Buscar por titulo...">
                 </label>
 
                 <button type="button" class="btn-reset" @click="clearFilters">

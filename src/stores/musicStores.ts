@@ -3,14 +3,17 @@ import { ref } from 'vue';
 import { MusicalItem } from '../models/MusicalItem';
 
 export const useMusicStore = defineStore('music', () => {
+    // Acá guardo la lista musical que uso en Home y Admin.
     const musicList = ref<MusicalItem[]>([]);
+    // Acá controlo el estado de carga para mostrar feedback en la UI.
     const isLoading = ref(false);
+    // Acá recuerdo el último término buscado para evitar llamadas repetidas.
     const activeSearchTerm = ref('');
 
     const fetchMusicFromAPI = async (searchTerm = 'pop') => {
         const normalizedSearchTerm = searchTerm.trim().toLowerCase();
 
-        // Evito llamados redundantes si ya tengo cargado ese mismo genero.
+        // Acá corto la ejecución si ya cargué exactamente el mismo término.
         if (musicList.value.length > 0 && activeSearchTerm.value === normalizedSearchTerm) return;
 
         isLoading.value = true;
@@ -18,14 +21,14 @@ export const useMusicStore = defineStore('music', () => {
             const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(normalizedSearchTerm)}&entity=song&limit=30`);
             const data = await response.json();
 
-            // Mapeo la respuesta de iTunes a nuestra clase
+            // Acá transformo la respuesta de iTunes al formato de mi clase MusicalItem.
             musicList.value = data.results.map((apiItem: any) => {
                 return new MusicalItem({
                     id: apiItem.trackId,
                     title: apiItem.trackName,
                     artist: apiItem.artistName,
                     genre: apiItem.primaryGenreName,
-                    // Truco que vi en internet: reemplazo 100x100 por 600x600 para tener la imagen en HD
+                    // Acá mejoro la portada para pedir una versión más grande.
                     image: apiItem.artworkUrl100.replace('100x100bb', '600x600bb'),
                     type: 'song',
                     audioPreview: apiItem.previewUrl
@@ -40,12 +43,13 @@ export const useMusicStore = defineStore('music', () => {
         }
     };
 
-    // Funciones para el CRUD en memoria que usará el AdminView
+    // Acá actualizo un item puntual dentro de la lista en memoria.
     const updateItem = (updatedItem: MusicalItem) => {
         const index = musicList.value.findIndex(item => item.id === updatedItem.id);
         if (index !== -1) musicList.value[index] = updatedItem;
     };
 
+    // Acá elimino un item de la lista en memoria por su id.
     const deleteItem = (id: number) => {
         musicList.value = musicList.value.filter(item => item.id !== id);
     };

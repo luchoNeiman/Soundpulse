@@ -2,27 +2,27 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import LabPlayer from '../components/LabPlayer.vue';
 
-// Estado reactivo para el ejemplo de reactividad (slider de volumen).
+// Acá guardo el estado reactivo del slider de volumen.
 const masterVolume = ref(72);
 
-// Estado del switch para el ejemplo de renderizado condicional.
+// Acá guardo el estado del switch para la demo de renderizado condicional.
 const isAmpOn = ref(false);
 const conditionalMode = ref<'if' | 'show'>('if');
 
-// Estados del formulario para demostrar el two-way data binding con v-model.
+// Acá guardo los campos del formulario para demostrar v-model.
 const passName = ref('');
 const passRole = ref('Artist');
 
-// Estado para el ejemplo de watch con simulacion asincronica.
+// Acá guardo el estado de búsqueda para la demo de watch asincrónico.
 const bandQuery = ref('');
 const bandSearchStatus = ref<'idle' | 'loading' | 'done'>('idle');
 const bandSearchResult = ref('');
 
-// Estado para el ejemplo de comunicacion entre componentes (props y emit).
+// Acá guardo estado para la comunicación padre-hijo con props y emit.
 const selectedTrack = ref('Neon Skyline');
 const playbackMessage = ref('');
 
-// Estado para el ejemplo de listas con v-for y TransitionGroup.
+// Acá guardo la cola reactiva para el ejemplo de listas con animación.
 const queueIdCounter = ref(4);
 const queuedSongs = ref([
     { id: 1, title: 'Electric Avenue' },
@@ -53,10 +53,12 @@ const demoBandCatalog = [
 
 let bandSearchTimer: ReturnType<typeof setTimeout> | undefined;
 
+// Acá calculo estilos dinámicos para que el visualizador responda al volumen.
 const visualScale = computed(() => Math.max(masterVolume.value / 100, 0.08));
 const visualWidth = computed(() => `${Math.max(masterVolume.value, 8)}%`);
 const visualGlow = computed(() => 0.1 + (masterVolume.value / 100) * 0.55);
 
+// Acá construyo la descripción del pase según el rol elegido.
 const roleTagline = computed(() => {
     if (passRole.value === 'Artist') return 'Acceso principal al escenario';
     if (passRole.value === 'VIP Guest') return 'Acceso a lounge premium y backstage';
@@ -64,6 +66,7 @@ const roleTagline = computed(() => {
 });
 
 const addRandomSong = () => {
+    // Acá agrego una canción aleatoria a la cola para mostrar reactividad en listas.
     const randomIndex = Math.floor(Math.random() * randomSongPool.length);
     const randomTitle = randomSongPool[randomIndex] ?? 'Tema sorpresa';
     queuedSongs.value.push({
@@ -74,14 +77,17 @@ const addRandomSong = () => {
 };
 
 const removeQueuedSong = (songId: number) => {
+    // Acá elimino una canción puntual por id.
     queuedSongs.value = queuedSongs.value.filter((song) => song.id !== songId);
 };
 
 const handlePlayTrack = (trackName: string) => {
+    // Acá actualizo un mensaje reactivo cuando el hijo emite el evento de reproducción.
     playbackMessage.value = `Reproduciendo: ${trackName}`;
 };
 
 watch(bandQuery, (newQuery) => {
+    // Acá limpio la búsqueda anterior para evitar resultados mezclados.
     if (bandSearchTimer) {
         clearTimeout(bandSearchTimer);
     }
@@ -96,7 +102,7 @@ watch(bandQuery, (newQuery) => {
     bandSearchStatus.value = 'loading';
     bandSearchResult.value = '';
 
-    // Simulo una consulta asincrónica para mostrar uso real de watch con efectos secundarios.
+    // Acá simulo una consulta asincrónica para mostrar efectos secundarios con watch.
     bandSearchTimer = setTimeout(() => {
         const lowerQuery = normalizedQuery.toLowerCase();
         const matchedBand = demoBandCatalog.find((band) =>
@@ -111,6 +117,7 @@ watch(bandQuery, (newQuery) => {
 });
 
 onBeforeUnmount(() => {
+    // Acá libero el timer si salgo de la vista para evitar fugas de memoria.
     if (bandSearchTimer) {
         clearTimeout(bandSearchTimer);
     }

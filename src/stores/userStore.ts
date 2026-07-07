@@ -13,28 +13,31 @@ export interface AppUser {
 }
 
 export const useUserStore = defineStore('user', () => {
-    // Estado: guardo todo el objeto del usuario logueado (incluyendo sus likedPostIDs)
+    // Acá guardo el usuario con sesión activa.
     const currentUser = ref<AppUser | null>(null);
+    // Acá mantengo la lista completa de usuarios para el panel admin.
     const userList = ref<AppUser[]>([]);
+    // Acá expongo un estado de carga para mejorar la experiencia visual.
     const isUsersLoading = ref(false);
 
-    // Acción: Iniciar sesión
+    // Acá inicio sesión guardando el usuario en memoria global.
     const login = (userData: AppUser) => {
         currentUser.value = userData;
     };
 
-    // Acción: Cerrar sesión
+    // Acá cierro sesión limpiando el usuario actual.
     const logout = () => {
         currentUser.value = null;
     };
 
+    // Acá traigo usuarios desde el JSON para poblar el estado del admin.
     const fetchUsers = async () => {
         isUsersLoading.value = true;
         try {
             const response = await fetch('/data/users.json');
             const users = await response.json();
 
-            // Garantizo likedPostIDs para no romper la logica de favoritos.
+            // Acá normalizo likedPostIDs para que nunca falle la lógica de favoritos.
             userList.value = users.map((user: Partial<AppUser>) => ({
                 id: Number(user.id ?? 0),
                 name: user.name ?? '',
@@ -53,6 +56,7 @@ export const useUserStore = defineStore('user', () => {
         }
     };
 
+    // Acá agrego un nuevo usuario a la lista en memoria.
     const addUser = (user: AppUser) => {
         userList.value.push({
             ...user,
@@ -60,6 +64,7 @@ export const useUserStore = defineStore('user', () => {
         });
     };
 
+    // Acá actualizo un usuario y sincronizo sesión si edito al actual.
     const updateUser = (updatedUser: AppUser) => {
         const index = userList.value.findIndex(user => user.id === updatedUser.id);
         if (index === -1) return;
@@ -69,17 +74,18 @@ export const useUserStore = defineStore('user', () => {
             likedPostIDs: Array.isArray(updatedUser.likedPostIDs) ? updatedUser.likedPostIDs : [],
         };
 
-        // Si se edita el mismo usuario logueado, sincronizo sesion actual.
+        // Acá sincronizo sesión cuando estoy editando al mismo usuario activo.
         if (currentUser.value?.id === updatedUser.id) {
             currentUser.value = userList.value[index];
         }
     };
 
+    // Acá elimino un usuario por id.
     const deleteUser = (id: number) => {
         userList.value = userList.value.filter(user => user.id !== id);
     };
 
-    // Acción: Alternar el Me Gusta
+    // Acá alterno un "me gusta" sobre una canción para el usuario activo.
     const toggleLike = (postId: number) => {
         if (!currentUser.value) {
             console.warn("Debes iniciar sesión (ej: Admin) para dar me gusta.");
@@ -89,18 +95,18 @@ export const useUserStore = defineStore('user', () => {
         const index = currentUser.value.likedPostIDs.indexOf(postId);
 
         if (index === -1) {
-            // Si no está, lo agrego
+            // Acá agrego el like porque todavía no existía.
             currentUser.value.likedPostIDs.push(postId);
-            // Cumplo la consigna: "crear un objeto request y logearlo en la consola"
+            // Acá simulo un request para dejar trazabilidad de la acción.
             console.log("REQUEST SIMULADO:", { action: 'ADD_LIKE', userId: currentUser.value.id, postId });
         } else {
-            // Si ya está, lo quito
+            // Acá quito el like porque ya estaba marcado.
             currentUser.value.likedPostIDs.splice(index, 1);
             console.log("REQUEST SIMULADO:", { action: 'REMOVE_LIKE', userId: currentUser.value.id, postId });
         }
     };
 
-    // Getter: Verifica si un disco está likeado por el usuario actual
+    // Acá verifico si un tema está marcado como favorito por el usuario actual.
     const isLiked = (postId: number) => {
         if (!currentUser.value) return false;
         return currentUser.value.likedPostIDs.includes(postId);

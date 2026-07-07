@@ -4,19 +4,25 @@ import { RouterView } from 'vue-router';
 import LandingOverlay from './components/LandingOverlay.vue';
 import { useUserStore } from './stores/userStore';
 
+// Acá controlo el audio de fondo global de toda la app.
 const audioPlayer = ref<HTMLAudioElement | null>(null);
+// Acá guardo si el audio de fondo estaba activo antes de abrir un preview.
 const wasBackgroundPlayingBeforePreview = ref(false);
+// Acá manejo la apertura/cierre del menú hamburguesa.
 const isMenuOpen = ref(false);
 const userStore = useUserStore();
 
+// Acá alterno el estado del menú móvil.
 const toggleMobileMenu = () => {
   isMenuOpen.value = !isMenuOpen.value;
 };
 
+// Acá cierro el menú móvil cuando elijo una sección.
 const closeMobileMenu = () => {
   isMenuOpen.value = false;
 };
 
+// Acá arranco la música de fondo luego del overlay inicial.
 const reproducirMusica = () => {
   if (audioPlayer.value) {
     audioPlayer.value.volume = 0.2;
@@ -24,11 +30,12 @@ const reproducirMusica = () => {
   }
 };
 
+// Acá pauso/reanudo el audio global según el estado de los previews de canciones.
 const handlePreviewPlaybackChange = (isPreviewPlaying: boolean) => {
   if (!audioPlayer.value) return;
 
   if (isPreviewPlaying) {
-    // Guardo si la musica de fondo estaba sonando para reanudarla al finalizar el preview.
+    // Acá guardo si la música de fondo estaba sonando para reanudarla al finalizar el preview.
     wasBackgroundPlayingBeforePreview.value = !audioPlayer.value.paused;
     if (wasBackgroundPlayingBeforePreview.value) {
       audioPlayer.value.pause();
@@ -48,13 +55,8 @@ const handlePreviewPlaybackChange = (isPreviewPlaying: boolean) => {
 
   <header class="site-header">
     <nav class="navegacion-principal">
-      <button
-        type="button"
-        class="menu-toggle"
-        :aria-expanded="isMenuOpen"
-        aria-label="Toggle navigation menu"
-        @click="toggleMobileMenu"
-      >
+      <button type="button" class="menu-toggle" :aria-expanded="isMenuOpen" aria-label="Toggle navigation menu"
+        @click="toggleMobileMenu">
         <i :class="isMenuOpen ? 'bi bi-x-lg' : 'bi bi-list'"></i>
       </button>
 

@@ -4,29 +4,29 @@ import { computed } from 'vue';
 import type { MusicalItem } from '../models/MusicalItem';
 import { useUserStore } from '../stores/userStore';
 
-// Recibo el objeto musical como propiedad desde la vista padre
+// Acá recibo la canción y el estado del preview desde la vista padre.
 const props = defineProps<{
     music: MusicalItem
     isPreviewPlaying: boolean
     isActivePreview: boolean
 }>();
 
-// Defino el evento que voy a emitir cuando el usuario le dé play
+// Acá declaro el evento que emito cuando quiero reproducir un preview.
 const emit = defineEmits(['play']);
 
-// Instancio el store global
+// Acá accedo al store global del usuario para favoritos.
 const userStore = useUserStore();
 
-// Computed property: reacciona automáticamente si el ID está en el array del usuario
+// Acá verifico en tiempo real si esta canción ya está en mis favoritos.
 const meGusta = computed(() => userStore.isLiked(props.music.id));
 
 const alternarMeGusta = () => {
-    // Si no hay usuario logueado, le muestro una alerta al visitante
+    // Acá protejo la acción: si no hay sesión, aviso antes de continuar.
     if (!userStore.currentUser) {
         alert("Por favor, inicia sesión en el panel Admin para guardar tus favoritos.");
         return;
     }
-    // Ejecuto la acción en el store
+    // Acá delego al store la lógica de agregar o quitar favoritos.
     userStore.toggleLike(props.music.id);
 };
 
@@ -37,7 +37,7 @@ const requestPlay = () => {
 };
 
 const previewIconClass = computed(() => {
-    // Uso iconos de Bootstrap para reflejar el estado real del preview.
+    // Acá cambio el ícono según si el preview está sonando o pausado.
     if (props.isActivePreview && props.isPreviewPlaying) return 'bi bi-pause-fill';
     return 'bi bi-play-fill';
 });
