@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useMusicStore } from '../stores/musicStores';
 import MusicalCard from '../components/MusicalCard.vue';
+import { fetchItunesSongs } from '../services/itunesApi';
 
 const musicStore = useMusicStore(); // Acá accedo al store de música global.
 const previewPlayer = ref<HTMLAudioElement | null>(null); // Acá guardo el reproductor para previews.
@@ -73,11 +74,11 @@ const canLoadMore = computed(() => visibleCardsCount.value < filteredMusicList.v
 
 const loadGenreOptionsFromAPI = async () => {
     try {
-        // Acá consulto un set amplio para construir el catálogo real de géneros.
-        const response = await fetch('https://itunes.apple.com/search?term=music&entity=song&limit=200');
-        const data = await response.json();
+        // Acá consulto géneros desde el servicio central (con fallback local si falla la API).
+        const data = await fetchItunesSongs('music', 200);
+        const results = Array.isArray(data.results) ? data.results : [];
 
-        const uniqueGenres = data.results
+        const uniqueGenres = results
             .map((apiItem: any) => apiItem.primaryGenreName)
             .filter((genre: string, index: number, arr: string[]) => !!genre && arr.indexOf(genre) === index)
             .sort((a: string, b: string) => a.localeCompare(b));

@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useUserStore, type AppUser } from '../stores/userStore';
 import { useMusicStore } from '../stores/musicStores';
 import { MusicalItem } from '../models/MusicalItem';
+import { fetchItunesSongs } from '../services/itunesApi';
 
 // Acá guardo los datos del formulario de acceso.
 const enteredEmail = ref('');
@@ -81,11 +82,11 @@ const filteredMusicList = computed(() => {
 
 const loadGenreOptionsFromAPI = async () => {
     try {
-        // Acá traigo un listado amplio para poblar el select de géneros.
-        const response = await fetch('https://itunes.apple.com/search?term=music&entity=song&limit=200');
-        const data = await response.json();
+        // Acá cargo géneros desde el servicio central (con fallback local si falla la API).
+        const data = await fetchItunesSongs('music', 200);
+        const results = Array.isArray(data.results) ? data.results : [];
 
-        const uniqueGenres = data.results
+        const uniqueGenres = results
             .map((apiItem: any) => apiItem.primaryGenreName)
             .filter((genre: string, index: number, arr: string[]) => !!genre && arr.indexOf(genre) === index)
             .sort((a: string, b: string) => a.localeCompare(b));
