@@ -17,7 +17,7 @@ const LOCAL_DATA_URL = '/data/content.json';
 const normalizeTerm = (term: string) => term.trim().toLowerCase() || DEFAULT_TERM;
 
 const buildInternalSearchUrl = (term: string, limit: number) =>
-    `/api/itunes/search?term=${encodeURIComponent(term)}&limit=${limit}`;
+    `/api/itunes/search?term=${encodeURIComponent(term)}&entity=song&limit=${limit}`;
 
 const mapLocalItemToItunesLike = (item: any): ItunesLikeSong => ({
     trackId: item.id,

@@ -21,6 +21,39 @@ const selectedArtist = ref('all');
 const albumQuery = ref('');
 const apiGenreOptions = ref<string[]>([]);
 
+const BASE_GENRE_OPTIONS = [
+    'Alternative',
+    'Alternative Rock',
+    'Blues',
+    'Classical',
+    'Dance',
+    'Electronic',
+    'Hip-Hop/Rap',
+    'Indie',
+    'Jazz',
+    'Latin',
+    'Metal',
+    'Pop',
+    'Punk',
+    'R&B/Soul',
+    'Reggae',
+    'Reggaeton',
+    'Rock',
+    'Singer/Songwriter',
+    'Soundtrack',
+    'Synthpop',
+];
+
+const normalizeText = (value: unknown) => String(value ?? '').trim().toLowerCase();
+const hasGenreAffinity = (genreOption: string, itemGenre: unknown) => {
+    const normalizedOption = normalizeText(genreOption);
+    const normalizedItemGenre = normalizeText(itemGenre);
+
+    return normalizedItemGenre === normalizedOption
+        || normalizedItemGenre.includes(normalizedOption)
+        || normalizedOption.includes(normalizedItemGenre);
+};
+
 // Acá mantengo el estado del formulario para crear/editar música.
 const formData = reactive({
     id: 0,
@@ -60,7 +93,7 @@ const modalTitle = computed(() => {
 const artistOptions = computed(() => {
     // Acá armo un catálogo único de artistas para el filtro.
     const allArtists = musicStore.musicList
-        .map(item => item.artist)
+        .map(item => String(item.artist ?? '').trim())
         .filter((artist, index, arr) => !!artist && arr.indexOf(artist) === index)
         .sort((a, b) => a.localeCompare(b));
 
@@ -69,12 +102,22 @@ const artistOptions = computed(() => {
 
 const filteredMusicList = computed(() => {
     // Acá aplico filtros combinados sobre la tabla de música.
-    const normalizedAlbumQuery = albumQuery.value.trim().toLowerCase();
+    const normalizedAlbumQuery = normalizeText(albumQuery.value);
+    const normalizedSelectedGenre = normalizeText(selectedGenre.value);
+    const normalizedSelectedArtist = normalizeText(selectedArtist.value);
 
     return musicStore.musicList.filter((item) => {
-        const genreMatch = selectedGenre.value === 'all' || item.genre === selectedGenre.value;
-        const artistMatch = selectedArtist.value === 'all' || item.artist === selectedArtist.value;
-        const albumMatch = !normalizedAlbumQuery || item.title.toLowerCase().includes(normalizedAlbumQuery);
+        const normalizedItemGenre = normalizeText(item.genre);
+        const normalizedItemArtist = normalizeText(item.artist);
+        const normalizedItemTitle = normalizeText(item.title);
+
+        const genreMatch = selectedGenre.value === 'all'
+            || normalizedItemGenre === normalizedSelectedGenre
+            || normalizedItemGenre.includes(normalizedSelectedGenre)
+            || normalizedSelectedGenre.includes(normalizedItemGenre);
+        const artistMatch = selectedArtist.value === 'all'
+            || normalizedItemArtist === normalizedSelectedArtist;
+        const albumMatch = !normalizedAlbumQuery || normalizedItemTitle.includes(normalizedAlbumQuery);
 
         return genreMatch && artistMatch && albumMatch;
     });
@@ -82,19 +125,30 @@ const filteredMusicList = computed(() => {
 
 const loadGenreOptionsFromAPI = async () => {
     try {
-        // Acá cargo géneros desde el servicio central (con fallback local si falla la API).
-        const data = await fetchItunesSongs('music', 200);
-        const results = Array.isArray(data.results) ? data.results : [];
+        // Acá valido cada género contra resultados reales para ocultar opciones vacías.
+        const checks = await Promise.all(
+            BASE_GENRE_OPTIONS.map(async (genreOption) => {
+                const data = await fetchItunesSongs(genreOption, 60);
+                const results = Array.isArray(data.results) ? data.results : [];
 
-        const uniqueGenres = results
-            .map((apiItem: any) => apiItem.primaryGenreName)
-            .filter((genre: string, index: number, arr: string[]) => !!genre && arr.indexOf(genre) === index)
+                const hasMatch = results.some((apiItem: any) =>
+                    hasGenreAffinity(genreOption, apiItem.primaryGenreName),
+                );
+
+                return hasMatch ? genreOption : null;
+            }),
+        );
+
+        const uniqueGenres = checks
+            .filter((genreOption): genreOption is string => !!genreOption)
             .sort((a: string, b: string) => a.localeCompare(b));
 
-        apiGenreOptions.value = uniqueGenres;
+        apiGenreOptions.value = uniqueGenres.length
+            ? uniqueGenres
+            : [...BASE_GENRE_OPTIONS].sort((a, b) => a.localeCompare(b));
     } catch (error) {
         console.error('Error cargando listado de generos desde API:', error);
-        apiGenreOptions.value = [];
+        apiGenreOptions.value = [...BASE_GENRE_OPTIONS].sort((a, b) => a.localeCompare(b));
     }
 };
 
@@ -321,7 +375,7 @@ watch(selectedGenre, async (newGenre) => {
     if (!accessGranted.value || activeTab.value !== 'music') return;
 
     const searchTerm = newGenre === 'all' ? 'music' : newGenre;
-    await musicStore.fetchMusicFromAPI(searchTerm);
+    await musicStore.fetchMusicFromAPI(searchTerm, 60);
     selectedArtist.value = 'all';
     albumQuery.value = '';
 });
