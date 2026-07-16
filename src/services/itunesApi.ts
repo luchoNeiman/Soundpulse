@@ -16,8 +16,8 @@ const LOCAL_DATA_URL = '/data/content.json';
 
 const normalizeTerm = (term: string) => term.trim().toLowerCase() || DEFAULT_TERM;
 
-const buildItunesSearchUrl = (term: string, limit: number) =>
-    `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=${limit}`;
+const buildInternalSearchUrl = (term: string, limit: number) =>
+    `/api/itunes/search?term=${encodeURIComponent(term)}&limit=${limit}`;
 
 const mapLocalItemToItunesLike = (item: any): ItunesLikeSong => ({
     trackId: item.id,
@@ -53,32 +53,26 @@ const fetchLocalSongs = async (term: string, limit: number): Promise<ItunesSearc
     return { results: filteredItems };
 };
 
-const parseAllOriginsGetPayload = async (response: Response): Promise<ItunesSearchResponse> => {
+const parseItunesPayload = async (response: Response): Promise<ItunesSearchResponse> => {
     if (!response.ok) {
-        throw new Error(`allorigins/get respondio HTTP ${response.status}`);
+        throw new Error(`itunes proxy respondio HTTP ${response.status}`);
     }
 
-    const wrapper = await response.json();
-    if (!wrapper || typeof wrapper.contents !== 'string') {
-        throw new Error('allorigins/get no devolvio contents valido');
-    }
-
-    const payload = JSON.parse(wrapper.contents);
+    const payload = await response.json();
     if (!payload || !Array.isArray(payload.results)) {
-        throw new Error('Respuesta invalida desde allorigins/get');
+        throw new Error('Respuesta invalida desde itunes proxy');
     }
 
     return payload;
 };
 
-// Flujo principal: proxy allorigins/get; si falla, usamos datos locales.
+// Flujo principal: proxy interno /api/itunes/search; si falla, usamos datos locales.
 export const fetchItunesSongs = async (term: string, limit: number): Promise<ItunesSearchResponse> => {
     const normalizedTerm = normalizeTerm(term);
 
     try {
-        const itunesUrl = buildItunesSearchUrl(normalizedTerm, limit);
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(itunesUrl)}`;
-        return await parseAllOriginsGetPayload(await fetch(proxyUrl));
+        const proxyUrl = buildInternalSearchUrl(normalizedTerm, limit);
+        return await parseItunesPayload(await fetch(proxyUrl));
     } catch (error) {
         console.warn(`No se pudo consultar iTunes por proxy. Uso fallback local. Detalle: ${String(error)}`);
         return fetchLocalSongs(normalizedTerm, limit);

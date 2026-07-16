@@ -11,6 +11,16 @@ export default defineConfig({
     vue(),
     vueDevTools(),
   ],
+  server: {
+    // Proxy de desarrollo: evita CORS al delegar la llamada externa al dev server.
+    proxy: {
+      '/api/itunes': {
+        target: 'https://itunes.apple.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/itunes/, ''),
+      },
+    },
+  },
   resolve: {
     alias: {
       // Acá defino "@" como alias para simplificar imports desde src.
